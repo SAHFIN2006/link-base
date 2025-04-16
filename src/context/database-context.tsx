@@ -1,5 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 // Define types for our data model
 export interface Category {
@@ -27,18 +28,18 @@ interface DatabaseContextType {
   // Categories
   categories: Category[];
   getCategory: (id: string) => Category | undefined;
-  addCategory: (category: Omit<Category, "id" | "createdAt" | "updatedAt">) => Category;
-  updateCategory: (id: string, data: Partial<Omit<Category, "id" | "createdAt" | "updatedAt">>) => void;
-  deleteCategory: (id: string) => void;
+  addCategory: (category: Omit<Category, "id" | "createdAt" | "updatedAt">) => Promise<Category>;
+  updateCategory: (id: string, data: Partial<Omit<Category, "id" | "createdAt" | "updatedAt">>) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
   
   // Resources
   resources: Resource[];
   getResourcesByCategory: (categoryId: string) => Resource[];
   getFavoriteResources: () => Resource[];
-  addResource: (resource: Omit<Resource, "id" | "createdAt" | "updatedAt" | "favorite">) => Resource;
-  updateResource: (id: string, data: Partial<Omit<Resource, "id" | "createdAt" | "updatedAt">>) => void;
-  deleteResource: (id: string) => void;
-  toggleFavorite: (id: string) => void;
+  addResource: (resource: Omit<Resource, "id" | "createdAt" | "updatedAt" | "favorite">) => Promise<Resource>;
+  updateResource: (id: string, data: Partial<Omit<Resource, "id" | "createdAt" | "updatedAt">>) => Promise<void>;
+  deleteResource: (id: string) => Promise<void>;
+  toggleFavorite: (id: string) => Promise<void>;
   
   // Search
   searchResources: (query: string) => Resource[];
@@ -55,206 +56,21 @@ interface DatabaseContextType {
   error: string | null;
 }
 
-// Default categories
-const DEFAULT_CATEGORIES: Category[] = [
-  {
-    id: "artificial-intelligence",
-    name: "Artificial Intelligence",
-    description: "AI tools, models, and research papers",
-    icon: "Brain",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "blockchain",
-    name: "Blockchain",
-    description: "Blockchain technology, cryptocurrencies, and decentralized applications",
-    icon: "Database",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "cybersecurity",
-    name: "Cybersecurity",
-    description: "Security tools, frameworks, and best practices",
-    icon: "Shield",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "gaming",
-    name: "Gaming",
-    description: "Game development resources and gaming platforms",
-    icon: "Gamepad",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "machine-learning",
-    name: "Machine Learning",
-    description: "ML frameworks, algorithms, and datasets",
-    icon: "Bot",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "automation",
-    name: "Automation",
-    description: "Tools and resources for automating workflows",
-    icon: "Cog",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "nanotech",
-    name: "Nanotech",
-    description: "Nanotechnology research and applications",
-    icon: "Cpu",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "programming",
-    name: "Programming",
-    description: "Programming languages, frameworks, and tools",
-    icon: "Code",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "statistics",
-    name: "Statistics",
-    description: "Statistical analysis tools and resources",
-    icon: "BarChart",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "data-science",
-    name: "Data Science",
-    description: "Data analysis, visualization, and data science tools",
-    icon: "Layers",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "robotics",
-    name: "Robotics",
-    description: "Robotics hardware, software, and research",
-    icon: "Cpu",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "software",
-    name: "Software",
-    description: "Software development tools and applications",
-    icon: "Folder",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "hardware",
-    name: "Hardware",
-    description: "Hardware components, devices, and technologies",
-    icon: "Cpu",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "tech-stock",
-    name: "Tech Stock",
-    description: "Latest technological products and innovations",
-    icon: "Monitor",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "news-events",
-    name: "News & Events",
-    description: "Latest tech news and upcoming events",
-    icon: "Calendar",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "innovation",
-    name: "Innovation",
-    description: "Cutting-edge research and technological breakthroughs",
-    icon: "Zap",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "vault",
-    name: "Vault",
-    description: "Secure storage for important resources",
-    icon: "Lock",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "business",
-    name: "Business",
-    description: "Business tools, strategies, and resources",
-    icon: "Briefcase",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }
-];
-
-// Sample initial resources
-const SAMPLE_RESOURCES: Resource[] = [
-  {
-    id: "resource-1",
-    title: "OpenAI",
-    url: "https://openai.com",
-    description: "Leading artificial intelligence research laboratory",
-    categoryId: "artificial-intelligence",
-    tags: ["AI", "Machine Learning", "GPT"],
-    favorite: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: "resource-2",
-    title: "GitHub",
-    url: "https://github.com",
-    description: "Platform for version control and collaboration",
-    categoryId: "programming",
-    tags: ["Git", "Coding", "Repository"],
-    favorite: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: "resource-3",
-    title: "Stack Overflow",
-    url: "https://stackoverflow.com",
-    description: "Community for developers to learn and share knowledge",
-    categoryId: "programming",
-    tags: ["Q&A", "Coding", "Community"],
-    favorite: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-];
-
 // Create context with default values
 const DatabaseContext = createContext<DatabaseContextType>({
   categories: [],
   getCategory: () => undefined,
-  addCategory: () => ({ id: "", name: "", description: "", icon: "", createdAt: "", updatedAt: "" }),
-  updateCategory: () => {},
-  deleteCategory: () => {},
+  addCategory: async () => ({ id: "", name: "", description: "", icon: "", createdAt: "", updatedAt: "" }),
+  updateCategory: async () => {},
+  deleteCategory: async () => {},
   
   resources: [],
   getResourcesByCategory: () => [],
   getFavoriteResources: () => [],
-  addResource: () => ({ id: "", title: "", url: "", description: "", categoryId: "", tags: [], favorite: false, createdAt: "", updatedAt: "" }),
-  updateResource: () => {},
-  deleteResource: () => {},
-  toggleFavorite: () => {},
+  addResource: async () => ({ id: "", title: "", url: "", description: "", categoryId: "", tags: [], favorite: false, createdAt: "", updatedAt: "" }),
+  updateResource: async () => {},
+  deleteResource: async () => {},
+  toggleFavorite: async () => {},
   
   searchResources: () => [],
   
@@ -268,88 +84,184 @@ interface DatabaseProviderProps {
   children: ReactNode;
 }
 
-// NOTE: This is a mock implementation with localStorage
-// In a real app, this would be replaced with Supabase or another database
 export function DatabaseProvider({ children }: DatabaseProviderProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Load data from localStorage on mount
+  // Load data from Supabase on mount
   useEffect(() => {
-    try {
-      setIsLoading(true);
-      
-      // Load categories
-      const storedCategories = localStorage.getItem("linkbase_categories");
-      if (storedCategories) {
-        setCategories(JSON.parse(storedCategories));
-      } else {
-        // Initialize with default categories
-        setCategories(DEFAULT_CATEGORIES);
-        localStorage.setItem("linkbase_categories", JSON.stringify(DEFAULT_CATEGORIES));
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Load categories
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from('categories')
+          .select('*')
+          .order('name');
+          
+        if (categoriesError) throw categoriesError;
+        
+        // Load resources
+        const { data: resourcesData, error: resourcesError } = await supabase
+          .from('resources')
+          .select('*');
+          
+        if (resourcesError) throw resourcesError;
+        
+        // Transform the data to match our interfaces
+        const transformedCategories = categoriesData.map(cat => ({
+          id: cat.id,
+          name: cat.name,
+          description: cat.description || '',
+          icon: cat.icon,
+          createdAt: cat.created_at,
+          updatedAt: cat.updated_at
+        }));
+        
+        const transformedResources = resourcesData.map(res => ({
+          id: res.id,
+          title: res.title,
+          url: res.url,
+          description: res.description || '',
+          categoryId: res.category_id,
+          tags: res.tags || [],
+          favorite: res.favorite || false,
+          createdAt: res.created_at,
+          updatedAt: res.updated_at
+        }));
+        
+        setCategories(transformedCategories);
+        setResources(transformedResources);
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Error loading data from Supabase:", err);
+        setError("Failed to load data. Please try refreshing the page.");
+        setIsLoading(false);
+        toast({
+          title: "Error",
+          description: "Failed to load data. Please try refreshing the page.",
+          variant: "destructive"
+        });
       }
+    };
+    
+    loadData();
+    
+    // Set up real-time subscriptions
+    const categoriesChannel = supabase
+      .channel('public:categories')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'categories' },
+        (payload) => {
+          console.log('Categories change received!', payload);
+          loadData(); // Reload all data when changes occur
+        }
+      )
+      .subscribe();
       
-      // Load resources
-      const storedResources = localStorage.getItem("linkbase_resources");
-      if (storedResources) {
-        setResources(JSON.parse(storedResources));
-      } else {
-        // Initialize with sample resources
-        setResources(SAMPLE_RESOURCES);
-        localStorage.setItem("linkbase_resources", JSON.stringify(SAMPLE_RESOURCES));
-      }
+    const resourcesChannel = supabase
+      .channel('public:resources')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'resources' },
+        (payload) => {
+          console.log('Resources change received!', payload);
+          loadData(); // Reload all data when changes occur
+        }
+      )
+      .subscribe();
       
-      setIsLoading(false);
-    } catch (err) {
-      console.error("Error loading data from localStorage:", err);
-      setError("Failed to load data. Please try refreshing the page.");
-      setIsLoading(false);
-    }
+    return () => {
+      supabase.removeChannel(categoriesChannel);
+      supabase.removeChannel(resourcesChannel);
+    };
   }, []);
-  
-  // Save data to localStorage whenever it changes
-  useEffect(() => {
-    if (!isLoading) {
-      localStorage.setItem("linkbase_categories", JSON.stringify(categories));
-      localStorage.setItem("linkbase_resources", JSON.stringify(resources));
-    }
-  }, [categories, resources, isLoading]);
   
   // Category operations
   const getCategory = (id: string) => {
     return categories.find(category => category.id === id);
   };
   
-  const addCategory = (categoryData: Omit<Category, "id" | "createdAt" | "updatedAt">) => {
-    const timestamp = new Date().toISOString();
-    // Generate ID from name with kebab-case
-    const idFromName = categoryData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    const newCategory: Category = {
-      ...categoryData,
-      id: idFromName || `category-${Date.now()}`,
-      createdAt: timestamp,
-      updatedAt: timestamp
-    };
-    
-    setCategories(prev => [...prev, newCategory]);
-    return newCategory;
+  const addCategory = async (categoryData: Omit<Category, "id" | "createdAt" | "updatedAt">) => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .insert([{
+          name: categoryData.name,
+          description: categoryData.description,
+          icon: categoryData.icon
+        }])
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      const newCategory: Category = {
+        id: data.id,
+        name: data.name,
+        description: data.description || '',
+        icon: data.icon,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+      
+      setCategories(prev => [...prev, newCategory]);
+      return newCategory;
+    } catch (err) {
+      console.error("Error adding category:", err);
+      toast({
+        title: "Error",
+        description: "Failed to add category. Please try again.",
+        variant: "destructive"
+      });
+      throw err;
+    }
   };
   
-  const updateCategory = (id: string, data: Partial<Omit<Category, "id" | "createdAt" | "updatedAt">>) => {
-    setCategories(prev => 
-      prev.map(category => 
-        category.id === id 
-          ? { ...category, ...data, updatedAt: new Date().toISOString() } 
-          : category
-      )
-    );
+  const updateCategory = async (id: string, data: Partial<Omit<Category, "id" | "createdAt" | "updatedAt">>) => {
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({
+          name: data.name,
+          description: data.description,
+          icon: data.icon
+        })
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+    } catch (err) {
+      console.error("Error updating category:", err);
+      toast({
+        title: "Error",
+        description: "Failed to update category. Please try again.",
+        variant: "destructive"
+      });
+      throw err;
+    }
   };
   
-  const deleteCategory = (id: string) => {
-    setCategories(prev => prev.filter(category => category.id !== id));
-    setResources(prev => prev.filter(resource => resource.categoryId !== id));
+  const deleteCategory = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+    } catch (err) {
+      console.error("Error deleting category:", err);
+      toast({
+        title: "Error",
+        description: "Failed to delete category. Please try again.",
+        variant: "destructive"
+      });
+      throw err;
+    }
   };
   
   // Resource operations
@@ -361,42 +273,115 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
     return resources.filter(resource => resource.favorite);
   };
   
-  const addResource = (resourceData: Omit<Resource, "id" | "createdAt" | "updatedAt" | "favorite">) => {
-    const timestamp = new Date().toISOString();
-    const newResource: Resource = {
-      ...resourceData,
-      id: `resource-${Date.now()}`,
-      favorite: false,
-      createdAt: timestamp,
-      updatedAt: timestamp
-    };
-    
-    setResources(prev => [...prev, newResource]);
-    return newResource;
+  const addResource = async (resourceData: Omit<Resource, "id" | "createdAt" | "updatedAt" | "favorite">) => {
+    try {
+      const { data, error } = await supabase
+        .from('resources')
+        .insert([{
+          title: resourceData.title,
+          url: resourceData.url,
+          description: resourceData.description,
+          category_id: resourceData.categoryId,
+          tags: resourceData.tags
+        }])
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      const newResource: Resource = {
+        id: data.id,
+        title: data.title,
+        url: data.url,
+        description: data.description || '',
+        categoryId: data.category_id,
+        tags: data.tags || [],
+        favorite: data.favorite || false,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+      
+      setResources(prev => [...prev, newResource]);
+      return newResource;
+    } catch (err) {
+      console.error("Error adding resource:", err);
+      toast({
+        title: "Error",
+        description: "Failed to add resource. Please try again.",
+        variant: "destructive"
+      });
+      throw err;
+    }
   };
   
-  const updateResource = (id: string, data: Partial<Omit<Resource, "id" | "createdAt" | "updatedAt">>) => {
-    setResources(prev => 
-      prev.map(resource => 
-        resource.id === id 
-          ? { ...resource, ...data, updatedAt: new Date().toISOString() } 
-          : resource
-      )
-    );
+  const updateResource = async (id: string, data: Partial<Omit<Resource, "id" | "createdAt" | "updatedAt">>) => {
+    try {
+      const { error } = await supabase
+        .from('resources')
+        .update({
+          title: data.title,
+          url: data.url,
+          description: data.description,
+          category_id: data.categoryId,
+          tags: data.tags,
+          favorite: data.favorite
+        })
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+    } catch (err) {
+      console.error("Error updating resource:", err);
+      toast({
+        title: "Error",
+        description: "Failed to update resource. Please try again.",
+        variant: "destructive"
+      });
+      throw err;
+    }
   };
   
-  const deleteResource = (id: string) => {
-    setResources(prev => prev.filter(resource => resource.id !== id));
+  const deleteResource = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('resources')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+    } catch (err) {
+      console.error("Error deleting resource:", err);
+      toast({
+        title: "Error",
+        description: "Failed to delete resource. Please try again.",
+        variant: "destructive"
+      });
+      throw err;
+    }
   };
   
-  const toggleFavorite = (id: string) => {
-    setResources(prev => 
-      prev.map(resource => 
-        resource.id === id 
-          ? { ...resource, favorite: !resource.favorite, updatedAt: new Date().toISOString() } 
-          : resource
-      )
-    );
+  const toggleFavorite = async (id: string) => {
+    const resource = resources.find(r => r.id === id);
+    if (resource) {
+      try {
+        const { error } = await supabase
+          .from('resources')
+          .update({ favorite: !resource.favorite })
+          .eq('id', id);
+          
+        if (error) throw error;
+        
+      } catch (err) {
+        console.error("Error toggling favorite:", err);
+        toast({
+          title: "Error",
+          description: "Failed to update favorite status. Please try again.",
+          variant: "destructive"
+        });
+        throw err;
+      }
+    }
   };
   
   // Search
