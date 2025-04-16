@@ -1,10 +1,9 @@
 
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
+import * as LucideIcons from "lucide-react";
 import { 
-  Plus, Folder, Filter, Search, ArrowRight, Brain, Briefcase, Calendar, 
-  Code, Cog, Lock, Monitor, Zap, Database, Shield, Cpu, Gamepad, BarChart, 
-  Bot, AlertCircle, Layers, ArrowDownAZ, ArrowUpZA, Calendar as CalendarIcon, Clock
+  Plus, Filter, Search, ArrowDownAZ, ArrowUpZA, Calendar as CalendarIcon, Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,29 +51,16 @@ export default function Categories() {
     });
   }, [categories, searchQuery, sortOption]);
   
-  // Get default icons for categories
-  const getCategoryIcon = (categoryId: string) => {
-    switch(categoryId) {
-      case "artificial-intelligence": return <Brain size={32} />;
-      case "blockchain": return <Database size={32} />;
-      case "cybersecurity": return <Shield size={32} />;
-      case "gaming": return <Gamepad size={32} />;
-      case "machine-learning": return <Bot size={32} />;
-      case "automation": return <Cog size={32} />;
-      case "nanotech": return <Cpu size={32} className="rotate-45" />;
-      case "programming": return <Code size={32} />;
-      case "statistics": return <BarChart size={32} />;
-      case "data-science": return <Layers size={32} />;
-      case "robotics": return <Cpu size={32} />;
-      case "software": return <Folder size={32} />;
-      case "hardware": return <Cpu size={32} />;
-      case "tech-stock": return <Monitor size={32} />;
-      case "news-events": return <Calendar size={32} />;
-      case "innovation": return <Zap size={32} />;
-      case "vault": return <Lock size={32} />;
-      case "business": return <Briefcase size={32} />;
-      default: return <AlertCircle size={32} />;
+  // Get category icons based on icon name stored in database
+  const getCategoryIcon = (category) => {
+    if (!category.icon) return <LucideIcons.Folder size={32} />;
+    
+    const IconComponent = LucideIcons[category.icon];
+    if (IconComponent) {
+      return <IconComponent size={32} />;
     }
+    
+    return <LucideIcons.Folder size={32} />;
   };
   
   const handleAddCategory = (data: CategoryFormData) => {
@@ -129,7 +115,7 @@ export default function Categories() {
               <Input 
                 type="text" 
                 placeholder="Search categories..." 
-                className="pl-11 bg-black/40 dark:bg-black/40 border-white/10 dark:border-white/10"
+                className="pl-11 bg-background border-input"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -177,7 +163,7 @@ export default function Categories() {
             >
               <CategoryCard
                 title={category.name}
-                icon={getCategoryIcon(category.id)}
+                icon={getCategoryIcon(category)}
                 path={`/category/${category.id}`}
               />
             </motion.div>
@@ -186,7 +172,7 @@ export default function Categories() {
         
         {filteredCategories.length === 0 && (
           <div className="text-center py-20">
-            <Folder className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+            <LucideIcons.Folder className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-2xl font-semibold mb-2">No categories found</h3>
             <p className="text-muted-foreground mb-6">
               {searchQuery 

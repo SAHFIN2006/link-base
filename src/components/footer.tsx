@@ -2,17 +2,22 @@
 import { Link } from "react-router-dom";
 import { 
   Github, Twitter, Linkedin, Mail, 
-  ArrowRight, Heart, Database, Book
+  ArrowRight, Heart, Book, Zap, Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/ui/logo";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { useDatabase } from "@/context/database-context";
 
 export function Footer() {
   const [email, setEmail] = useState("");
   const { toast } = useToast();
+  const { categories } = useDatabase();
+  
+  // Get top categories (limit to 4)
+  const topCategories = categories.slice(0, 4);
   
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +29,7 @@ export function Footer() {
   };
 
   return (
-    <footer className="border-t border-border bg-background py-12 dark:bg-background/80">
+    <footer className="border-t border-border bg-background py-12">
       <div className="container px-4 mx-auto">
         {/* Top Section with Logo and Newsletter */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
@@ -54,7 +59,6 @@ export function Footer() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="bg-background dark:bg-black/20"
               />
               <Button type="submit">
                 Subscribe
@@ -71,25 +75,32 @@ export function Footer() {
               <li><Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">Home</Link></li>
               <li><Link to="/categories" className="text-muted-foreground hover:text-foreground transition-colors">Categories</Link></li>
               <li><Link to="/my-links" className="text-muted-foreground hover:text-foreground transition-colors">My Links</Link></li>
+              <li><Link to="/documentation" className="text-muted-foreground hover:text-foreground transition-colors">Documentation</Link></li>
             </ul>
           </div>
           
           <div>
             <h4 className="font-medium mb-3">Popular Categories</h4>
             <ul className="space-y-2">
-              <li><Link to="/category/artificial-intelligence" className="text-muted-foreground hover:text-foreground transition-colors">AI</Link></li>
-              <li><Link to="/category/programming" className="text-muted-foreground hover:text-foreground transition-colors">Programming</Link></li>
-              <li><Link to="/category/cybersecurity" className="text-muted-foreground hover:text-foreground transition-colors">Cybersecurity</Link></li>
-              <li><Link to="/category/data-science" className="text-muted-foreground hover:text-foreground transition-colors">Data Science</Link></li>
+              {topCategories.map(category => (
+                <li key={category.id}>
+                  <Link 
+                    to={`/category/${category.id}`} 
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {category.name}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
           
           <div>
             <h4 className="font-medium mb-3">Resources</h4>
             <ul className="space-y-2">
-              <li><a href="https://github.com/yourusername/linkbase" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">GitHub Repo</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Documentation</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">API</a></li>
+              <li><Link to="/documentation" className="text-muted-foreground hover:text-foreground transition-colors">Documentation</Link></li>
+              <li><Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About Us</Link></li>
+              <li><Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link></li>
             </ul>
           </div>
           
@@ -122,10 +133,10 @@ export function Footer() {
           </p>
           <div className="flex gap-4 mt-4 md:mt-0">
             <span className="text-sm text-muted-foreground flex items-center gap-1">
-              <Database className="h-3 w-3" /> Powered by Supabase
+              <Zap className="h-3 w-3" /> Powered by Supabase
             </span>
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms of Service</a>
+            <Link to="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>

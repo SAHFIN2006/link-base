@@ -1,10 +1,10 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ExternalLink, Star, Trash, Edit, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { useTheme } from "@/context/theme-context";
+import { useToast } from "@/hooks/use-toast";
 
 export interface ResourceCardProps {
   id: string;
@@ -35,14 +35,30 @@ export function ResourceCard({
 }: ResourceCardProps) {
   const [isFavorite, setIsFavorite] = useState(favorite);
   const [isHovered, setIsHovered] = useState(false);
-  const { theme } = useTheme();
+  const { toast } = useToast();
+  
+  // Update local state when prop changes
+  useEffect(() => {
+    setIsFavorite(favorite);
+  }, [favorite]);
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsFavorite(!isFavorite);
+    
+    const newStatus = !isFavorite;
+    setIsFavorite(newStatus);
+    
     if (onFavorite) {
-      onFavorite(id, !isFavorite);
+      onFavorite(id, newStatus);
+      
+      toast({
+        title: newStatus ? "Added to favorites" : "Removed from favorites",
+        description: newStatus 
+          ? "This resource has been added to your favorites" 
+          : "This resource has been removed from your favorites",
+        duration: 3000
+      });
     }
   };
 
@@ -69,7 +85,11 @@ export function ResourceCard({
       });
     } else {
       navigator.clipboard.writeText(url);
-      // Would add toast notification here
+      toast({
+        title: "Link copied",
+        description: "The link has been copied to your clipboard",
+        duration: 3000
+      });
     }
   };
 
@@ -98,7 +118,7 @@ export function ResourceCard({
             variant="ghost" 
             className={cn(
               "h-8 w-8 rounded-full transition-colors",
-              isFavorite ? "text-yellow-400 hover:text-yellow-500" : "text-muted-foreground hover:text-white dark:hover:text-white"
+              isFavorite ? "text-yellow-400 hover:text-yellow-500" : "text-muted-foreground hover:text-foreground"
             )}
             onClick={handleFavoriteClick}
           >
@@ -114,7 +134,7 @@ export function ResourceCard({
             {tags.map((tag) => (
               <span 
                 key={tag} 
-                className="text-xs px-2 py-1 rounded-full resource-tag"
+                className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary"
               >
                 #{tag}
               </span>
@@ -122,7 +142,7 @@ export function ResourceCard({
           </div>
         )}
         
-        <div className="flex items-center justify-between mt-auto pt-2 border-t border-white/10 dark:border-white/10 light:border-gray-100">
+        <div className="flex items-center justify-between mt-auto pt-2 border-t border-border">
           <div className="text-xs text-muted-foreground truncate max-w-[180px]">
             {new URL(url).hostname}
           </div>

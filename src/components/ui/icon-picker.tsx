@@ -77,7 +77,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
       </div>
       
       {isOpen && (
-        <div className="absolute z-50 w-[340px] mt-2 p-3 bg-black/90 dark:bg-black/90 light:bg-white/95 backdrop-blur-xl border border-white/10 light:border-gray-200 rounded-lg shadow-lg overflow-hidden">
+        <div className="absolute z-50 w-[340px] mt-2 p-3 dark:bg-background/95 light:bg-background/95 backdrop-blur-xl border border-border rounded-lg shadow-lg overflow-hidden">
           <div className="mb-2 text-sm font-medium text-muted-foreground">Popular Icons</div>
           <div className="grid grid-cols-8 gap-1 mb-4">
             {popularIcons.map((name) => {
