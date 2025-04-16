@@ -6,6 +6,7 @@ import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/context/theme-context";
+import { cn } from "@/lib/utils";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -28,9 +29,14 @@ export function Navbar() {
     setIsOpen(false);
   }, [location.pathname]);
 
-  const navClasses = `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-    isScrolled ? "py-3 bg-black/70 dark:bg-black/70 backdrop-blur-lg shadow-md" : "py-5"
-  }`;
+  // Determine background class based on scroll position and theme
+  const navClasses = cn(
+    "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+    isScrolled 
+      ? "py-3 backdrop-blur-lg shadow-md " + 
+        (theme === "dark" ? "bg-black/70" : "bg-white/90 border-b border-gray-100")
+      : "py-5"
+  );
 
   const navLinks = [
     { title: "Home", path: "/" },
@@ -50,11 +56,12 @@ export function Navbar() {
             <Link
               key={link.path}
               to={link.path}
-              className={`text-sm font-medium transition-colors hover:text-white dark:hover:text-white ${
+              className={cn(
+                "text-sm font-medium transition-colors",
                 location.pathname === link.path
-                  ? "text-white dark:text-white"
-                  : "text-muted-foreground dark:text-muted-foreground"
-              }`}
+                  ? "navbar-link-active"
+                  : "navbar-link"
+              )}
             >
               {link.title}
             </Link>
@@ -84,7 +91,10 @@ export function Navbar() {
 
         {/* Mobile menu button */}
         <button
-          className="md:hidden text-white dark:text-white p-1"
+          className={cn(
+            "md:hidden p-1",
+            theme === "dark" ? "text-white" : "text-gray-700"
+          )}
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Toggle menu"
         >
@@ -94,22 +104,32 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {isOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-black/95 dark:bg-black/95 backdrop-blur-lg border-t border-white/10 animate-fade-in-bottom">
+        <div className={cn(
+          "md:hidden absolute top-full left-0 right-0 border-t animate-fade-in-bottom",
+          theme === "dark" 
+            ? "bg-black/95 backdrop-blur-lg border-white/10" 
+            : "bg-white/95 backdrop-blur-lg border-gray-100"
+        )}>
           <div className="container px-4 py-4 mx-auto flex flex-col gap-4">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
-                className={`py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                className={cn(
+                  "py-2 px-4 text-sm font-medium rounded-md transition-colors",
                   location.pathname === link.path
-                    ? "bg-primary/20 text-white dark:text-white"
-                    : "text-muted-foreground dark:text-muted-foreground hover:bg-white/5"
-                }`}
+                    ? theme === "dark" 
+                      ? "bg-primary/20 text-white" 
+                      : "bg-linkblue/10 text-linkblue"
+                    : theme === "dark"
+                      ? "text-muted-foreground hover:bg-white/5" 
+                      : "text-gray-600 hover:bg-gray-50"
+                )}
               >
                 {link.title}
               </Link>
             ))}
-            <div className="flex items-center justify-between pt-2 mt-2 border-t border-white/10">
+            <div className="flex items-center justify-between pt-2 mt-2 border-t border-gray-100 dark:border-white/10">
               <Button 
                 variant="ghost" 
                 size="icon"

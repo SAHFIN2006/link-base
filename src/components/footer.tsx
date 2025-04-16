@@ -1,138 +1,131 @@
 
-import { useState } from "react";
-import { Github, Linkedin, Mail, Twitter, Send, Database, ExternalLink } from "lucide-react";
-import { Logo } from "@/components/ui/logo";
+import { Link } from "react-router-dom";
+import { 
+  Github, Twitter, Linkedin, Mail, 
+  ArrowRight, Heart, Database, Book
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Logo } from "@/components/ui/logo";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 export function Footer() {
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSending(true);
-    
-    // Simulate sending email
-    setTimeout(() => {
-      toast({
-        title: "Message sent!",
-        description: "We'll get back to you as soon as possible.",
-      });
-      setEmail("");
-      setMessage("");
-      setIsSending(false);
-    }, 1500);
+    toast({
+      title: "Subscribed!",
+      description: "You've successfully subscribed to our newsletter.",
+    });
+    setEmail("");
   };
 
   return (
-    <footer className="border-t border-white/10 dark:border-white/10 bg-card/80 dark:bg-black/40 backdrop-blur-md py-12">
+    <footer className="border-t border-border bg-background py-12 dark:bg-background/80">
       <div className="container px-4 mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Logo and description */}
-          <div className="flex flex-col gap-4">
-            <Logo />
-            <p className="text-muted-foreground max-w-md">
-              Your gateway to the best technology resources, curated for developers
-              and tech enthusiasts.
+        {/* Top Section with Logo and Newsletter */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
+          <div>
+            <Logo size="lg" />
+            <p className="mt-4 text-muted-foreground max-w-md">
+              Your personal gateway to the best technology resources, 
+              curated for developers and tech enthusiasts.
             </p>
-            <div className="flex gap-2 items-center">
-              <Database className="h-4 w-4 text-primary" />
+            <div className="flex items-center gap-1 mt-4">
+              <Heart className="h-4 w-4 text-red-500" />
               <p className="text-sm text-muted-foreground">
-                <span className="font-medium">Storage:</span> LocalStorage (Supabase Integration Coming Soon)
+                Built with passion for the developer community
               </p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} LinkBase. All rights reserved.
+          </div>
+          
+          <div>
+            <h3 className="text-xl font-semibold mb-4">Stay Updated</h3>
+            <p className="text-muted-foreground mb-4">
+              Subscribe to our newsletter for the latest resources and updates.
             </p>
-          </div>
-
-          {/* Quick links */}
-          <div className="flex flex-col gap-4">
-            <h3 className="text-lg font-semibold">Quick Links</h3>
-            <div className="grid grid-cols-1 gap-2">
-              <a href="/" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2">
-                <span className="w-1 h-1 bg-primary rounded-full"></span>
-                Home
-              </a>
-              <a href="/categories" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2">
-                <span className="w-1 h-1 bg-primary rounded-full"></span>
-                Categories
-              </a>
-              <a href="/my-links" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2">
-                <span className="w-1 h-1 bg-primary rounded-full"></span>
-                My Links
-              </a>
-            </div>
-            
-            <h3 className="text-lg font-semibold mt-4">Connect With Us</h3>
-            <div className="flex gap-3">
-              <a 
-                href="https://github.com" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="bg-muted p-2 rounded-full hover:bg-primary/20 transition-colors"
-                aria-label="GitHub"
-              >
-                <Github className="h-4 w-4" />
-              </a>
-              <a 
-                href="https://twitter.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="bg-muted p-2 rounded-full hover:bg-primary/20 transition-colors"
-                aria-label="Twitter"
-              >
-                <Twitter className="h-4 w-4" />
-              </a>
-              <a 
-                href="https://linkedin.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="bg-muted p-2 rounded-full hover:bg-primary/20 transition-colors"
-                aria-label="LinkedIn"
-              >
-                <Linkedin className="h-4 w-4" />
-              </a>
-              <a 
-                href="mailto:contact@linkbase.com" 
-                className="bg-muted p-2 rounded-full hover:bg-primary/20 transition-colors"
-                aria-label="Email"
-              >
-                <Mail className="h-4 w-4" />
-              </a>
-            </div>
-          </div>
-
-          {/* Contact Form */}
-          <div className="flex flex-col gap-4">
-            <h3 className="text-lg font-semibold">Get In Touch</h3>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            <form onSubmit={handleSubscribe} className="flex gap-2">
               <Input
                 type="email"
-                placeholder="Your email"
+                placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="bg-muted/50 border-white/10 dark:border-white/10"
+                className="bg-background dark:bg-black/20"
               />
-              <div className="relative">
-                <textarea 
-                  placeholder="Your message"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  required
-                  className="w-full min-h-[100px] p-3 rounded-md bg-muted/50 border border-white/10 dark:border-white/10 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              <Button type="submit" className="gap-2" disabled={isSending}>
-                {isSending ? "Sending..." : "Send Message"}
-                <Send className="h-4 w-4" />
+              <Button type="submit">
+                Subscribe
               </Button>
             </form>
+          </div>
+        </div>
+        
+        {/* Middle Section with Links */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+          <div>
+            <h4 className="font-medium mb-3">Navigation</h4>
+            <ul className="space-y-2">
+              <li><Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">Home</Link></li>
+              <li><Link to="/categories" className="text-muted-foreground hover:text-foreground transition-colors">Categories</Link></li>
+              <li><Link to="/my-links" className="text-muted-foreground hover:text-foreground transition-colors">My Links</Link></li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-medium mb-3">Popular Categories</h4>
+            <ul className="space-y-2">
+              <li><Link to="/category/artificial-intelligence" className="text-muted-foreground hover:text-foreground transition-colors">AI</Link></li>
+              <li><Link to="/category/programming" className="text-muted-foreground hover:text-foreground transition-colors">Programming</Link></li>
+              <li><Link to="/category/cybersecurity" className="text-muted-foreground hover:text-foreground transition-colors">Cybersecurity</Link></li>
+              <li><Link to="/category/data-science" className="text-muted-foreground hover:text-foreground transition-colors">Data Science</Link></li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-medium mb-3">Resources</h4>
+            <ul className="space-y-2">
+              <li><a href="https://github.com/yourusername/linkbase" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">GitHub Repo</a></li>
+              <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Documentation</a></li>
+              <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">API</a></li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-medium mb-3">Connect</h4>
+            <div className="flex gap-3">
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="p-2 bg-muted/50 rounded-full hover:bg-primary/20 transition-colors">
+                <Github className="h-4 w-4" />
+              </a>
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="p-2 bg-muted/50 rounded-full hover:bg-primary/20 transition-colors">
+                <Twitter className="h-4 w-4" />
+              </a>
+              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2 bg-muted/50 rounded-full hover:bg-primary/20 transition-colors">
+                <Linkedin className="h-4 w-4" />
+              </a>
+              <a href="mailto:contact@linkbase.com" className="p-2 bg-muted/50 rounded-full hover:bg-primary/20 transition-colors">
+                <Mail className="h-4 w-4" />
+              </a>
+            </div>
+            <p className="mt-4 text-sm text-muted-foreground">
+              <Mail className="inline h-3 w-3 mr-1" /> contact@linkbase.com
+            </p>
+          </div>
+        </div>
+        
+        {/* Bottom Section with Copyright */}
+        <div className="flex flex-col md:flex-row justify-between items-center pt-6 border-t border-border">
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} LinkBase. All rights reserved.
+          </p>
+          <div className="flex gap-4 mt-4 md:mt-0">
+            <span className="text-sm text-muted-foreground flex items-center gap-1">
+              <Database className="h-3 w-3" /> Powered by Supabase
+            </span>
+            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</a>
+            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms of Service</a>
           </div>
         </div>
       </div>

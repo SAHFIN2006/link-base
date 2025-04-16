@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ExternalLink, Star, Trash, Edit, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "@/context/theme-context";
 
 export interface ResourceCardProps {
   id: string;
@@ -34,6 +35,7 @@ export function ResourceCard({
 }: ResourceCardProps) {
   const [isFavorite, setIsFavorite] = useState(favorite);
   const [isHovered, setIsHovered] = useState(false);
+  const { theme } = useTheme();
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -96,7 +98,7 @@ export function ResourceCard({
             variant="ghost" 
             className={cn(
               "h-8 w-8 rounded-full transition-colors",
-              isFavorite ? "text-yellow-400 hover:text-yellow-500" : "text-muted-foreground hover:text-white"
+              isFavorite ? "text-yellow-400 hover:text-yellow-500" : "text-muted-foreground hover:text-white dark:hover:text-white"
             )}
             onClick={handleFavoriteClick}
           >
@@ -112,7 +114,7 @@ export function ResourceCard({
             {tags.map((tag) => (
               <span 
                 key={tag} 
-                className="text-xs px-2 py-1 rounded-full bg-primary/20 text-primary-foreground"
+                className="text-xs px-2 py-1 rounded-full resource-tag"
               >
                 #{tag}
               </span>
@@ -120,7 +122,7 @@ export function ResourceCard({
           </div>
         )}
         
-        <div className="flex items-center justify-between mt-auto pt-2 border-t border-white/10">
+        <div className="flex items-center justify-between mt-auto pt-2 border-t border-white/10 dark:border-white/10 light:border-gray-100">
           <div className="text-xs text-muted-foreground truncate max-w-[180px]">
             {new URL(url).hostname}
           </div>

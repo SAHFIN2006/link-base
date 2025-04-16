@@ -153,7 +153,7 @@
   }
   
   .light .glass-card {
-    @apply bg-white/40 backdrop-blur-md border border-black/10 shadow-lg;
+    @apply bg-white/80 backdrop-blur-md border border-black/5 shadow-md;
   }
   
   .glass-panel {
@@ -161,7 +161,7 @@
   }
   
   .light .glass-panel {
-    @apply bg-white/30 backdrop-blur-md border border-black/10;
+    @apply bg-white/70 backdrop-blur-md border border-black/5;
   }
   
   .glow-text {
@@ -183,6 +183,23 @@
     100% {
       left: 150%;
     }
+  }
+
+  /* Light mode specific components */
+  .light .navbar-link {
+    @apply text-gray-700 hover:text-linkblue dark:text-muted-foreground dark:hover:text-white;
+  }
+
+  .light .navbar-link-active {
+    @apply text-linkblue font-medium dark:text-white;
+  }
+
+  .light .resource-tag {
+    @apply bg-linkblue/10 text-linkblue dark:bg-primary/20 dark:text-primary-foreground;
+  }
+
+  .light .search-input {
+    @apply bg-white border-gray-200 focus:border-linkblue dark:bg-black/40 dark:border-white/10;
   }
 }
 
