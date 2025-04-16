@@ -7,8 +7,22 @@ import { cn } from "@/lib/utils";
 // Create a proper type for our icon map
 type LucideIcon = React.ComponentType<React.SVGProps<SVGSVGElement> & { size?: number | string }>;
 
-// Extract all icons from lucide-react
-const iconMap: Record<string, LucideIcon> = {...LucideIcons};
+// Filter out the non-icon exports and construct a clean icon map
+const iconMap: Record<string, LucideIcon> = {};
+
+// Add only the actual icon components to our map
+Object.entries(LucideIcons).forEach(([name, component]) => {
+  // Skip utility functions and non-component exports
+  if (
+    typeof component === 'function' && 
+    name !== 'createLucideIcon' && 
+    name !== 'icons' &&
+    name !== 'default' &&
+    name !== 'type'
+  ) {
+    iconMap[name] = component as LucideIcon;
+  }
+});
 
 interface IconPickerProps {
   selectedIcon: string;
@@ -44,11 +58,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
 
   // Get the rest of the icons
   const restOfIcons = Object.keys(iconMap)
-    .filter(icon => !popularIcons.includes(icon) && 
-      typeof iconMap[icon] === 'function' && 
-      // Filter out some non-icon exports from lucide
-      !['createLucideIcon', 'Icon', 'type', 'default'].includes(icon)
-    );
+    .filter(icon => !popularIcons.includes(icon));
 
   return (
     <div className="relative">
@@ -72,6 +82,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
           <div className="grid grid-cols-8 gap-1 mb-4">
             {popularIcons.map((name) => {
               const Icon = iconMap[name];
+              if (!Icon) return null;
               return (
                 <Button
                   key={name}
@@ -98,6 +109,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
           <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
             {restOfIcons.map((name) => {
               const Icon = iconMap[name];
+              if (!Icon) return null;
               return (
                 <Button
                   key={name}
