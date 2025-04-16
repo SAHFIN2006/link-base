@@ -58,6 +58,110 @@ interface DatabaseContextType {
 // Default categories
 const DEFAULT_CATEGORIES: Category[] = [
   {
+    id: "artificial-intelligence",
+    name: "Artificial Intelligence",
+    description: "AI tools, models, and research papers",
+    icon: "Brain",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "blockchain",
+    name: "Blockchain",
+    description: "Blockchain technology, cryptocurrencies, and decentralized applications",
+    icon: "Database",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "cybersecurity",
+    name: "Cybersecurity",
+    description: "Security tools, frameworks, and best practices",
+    icon: "Shield",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "gaming",
+    name: "Gaming",
+    description: "Game development resources and gaming platforms",
+    icon: "Gamepad",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "machine-learning",
+    name: "Machine Learning",
+    description: "ML frameworks, algorithms, and datasets",
+    icon: "Bot",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "automation",
+    name: "Automation",
+    description: "Tools and resources for automating workflows",
+    icon: "Cog",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "nanotech",
+    name: "Nanotech",
+    description: "Nanotechnology research and applications",
+    icon: "Cpu",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "programming",
+    name: "Programming",
+    description: "Programming languages, frameworks, and tools",
+    icon: "Code",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "statistics",
+    name: "Statistics",
+    description: "Statistical analysis tools and resources",
+    icon: "BarChart",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "data-science",
+    name: "Data Science",
+    description: "Data analysis, visualization, and data science tools",
+    icon: "Layers",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "robotics",
+    name: "Robotics",
+    description: "Robotics hardware, software, and research",
+    icon: "Cpu",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "software",
+    name: "Software",
+    description: "Software development tools and applications",
+    icon: "Folder",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "hardware",
+    name: "Hardware",
+    description: "Hardware components, devices, and technologies",
+    icon: "Cpu",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
     id: "tech-stock",
     name: "Tech Stock",
     description: "Latest technological products and innovations",
@@ -67,7 +171,7 @@ const DEFAULT_CATEGORIES: Category[] = [
   },
   {
     id: "news-events",
-    name: "News and Events",
+    name: "News & Events",
     description: "Latest tech news and upcoming events",
     icon: "Calendar",
     createdAt: new Date().toISOString(),
@@ -90,34 +194,10 @@ const DEFAULT_CATEGORIES: Category[] = [
     updatedAt: new Date().toISOString(),
   },
   {
-    id: "automation",
-    name: "Automation",
-    description: "Tools and resources for automating workflows",
-    icon: "Cog",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
     id: "business",
     name: "Business",
     description: "Business tools, strategies, and resources",
     icon: "Briefcase",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "artificial-intelligence",
-    name: "Artificial Intelligence",
-    description: "AI tools, models, and research papers",
-    icon: "Brain",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "programming",
-    name: "Programming",
-    description: "Programming languages, frameworks, and tools",
-    icon: "Code",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }
@@ -132,6 +212,28 @@ const SAMPLE_RESOURCES: Resource[] = [
     description: "Leading artificial intelligence research laboratory",
     categoryId: "artificial-intelligence",
     tags: ["AI", "Machine Learning", "GPT"],
+    favorite: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: "resource-2",
+    title: "GitHub",
+    url: "https://github.com",
+    description: "Platform for version control and collaboration",
+    categoryId: "programming",
+    tags: ["Git", "Coding", "Repository"],
+    favorite: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: "resource-3",
+    title: "Stack Overflow",
+    url: "https://stackoverflow.com",
+    description: "Community for developers to learn and share knowledge",
+    categoryId: "programming",
+    tags: ["Q&A", "Coding", "Community"],
     favorite: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -222,9 +324,11 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
   
   const addCategory = (categoryData: Omit<Category, "id" | "createdAt" | "updatedAt">) => {
     const timestamp = new Date().toISOString();
+    // Generate ID from name with kebab-case
+    const idFromName = categoryData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     const newCategory: Category = {
       ...categoryData,
-      id: `category-${Date.now()}`,
+      id: idFromName || `category-${Date.now()}`,
       createdAt: timestamp,
       updatedAt: timestamp
     };
@@ -306,7 +410,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
     );
   };
   
-  // Stats
+  // Stats - real-time
   const getCategoryStats = () => {
     return {
       totalCategories: categories.length,

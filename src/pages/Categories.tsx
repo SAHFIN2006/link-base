@@ -1,43 +1,103 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Plus, Folder, Filter, Search, ArrowRight, Brain, Briefcase, Calendar, Code, Cog, Lock, Monitor, Zap } from "lucide-react";
+import { 
+  Plus, Folder, Filter, Search, ArrowRight, Brain, Briefcase, Calendar, 
+  Code, Cog, Lock, Monitor, Zap, Database, Shield, Cpu, Gamepad, BarChart, 
+  Bot, AlertCircle, Layers, ArrowDownAZ, ArrowUpZA, Calendar as CalendarIcon, Clock
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CategoryCard } from "@/components/ui/category-card";
 import { Layout } from "@/components/layout";
 import { useDatabase } from "@/context/database-context";
 import { AddCategoryDialog, CategoryFormData } from "@/components/dialogs/add-category-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+type SortOption = "az" | "za" | "newest" | "oldest";
 
 export default function Categories() {
   const { categories, addCategory } = useDatabase();
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddCategoryDialogOpen, setIsAddCategoryDialogOpen] = useState(false);
+  const [sortOption, setSortOption] = useState<SortOption>("az");
   
   // Filter categories based on search query
-  const filteredCategories = categories.filter(category => 
-    category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    category.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCategories = useMemo(() => {
+    // First filter by search query
+    const filtered = categories.filter(category => 
+      category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      category.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Then sort based on sortOption
+    return [...filtered].sort((a, b) => {
+      switch (sortOption) {
+        case "az":
+          return a.name.localeCompare(b.name);
+        case "za":
+          return b.name.localeCompare(a.name);
+        case "newest":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "oldest":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        default:
+          return 0;
+      }
+    });
+  }, [categories, searchQuery, sortOption]);
   
   // Get default icons for categories
   const getCategoryIcon = (categoryId: string) => {
     switch(categoryId) {
+      case "artificial-intelligence": return <Brain size={32} />;
+      case "blockchain": return <Database size={32} />;
+      case "cybersecurity": return <Shield size={32} />;
+      case "gaming": return <Gamepad size={32} />;
+      case "machine-learning": return <Bot size={32} />;
+      case "automation": return <Cog size={32} />;
+      case "nanotech": return <Cpu size={32} className="rotate-45" />;
+      case "programming": return <Code size={32} />;
+      case "statistics": return <BarChart size={32} />;
+      case "data-science": return <Layers size={32} />;
+      case "robotics": return <Cpu size={32} />;
+      case "software": return <Folder size={32} />;
+      case "hardware": return <Cpu size={32} />;
       case "tech-stock": return <Monitor size={32} />;
       case "news-events": return <Calendar size={32} />;
       case "innovation": return <Zap size={32} />;
       case "vault": return <Lock size={32} />;
-      case "automation": return <Cog size={32} />;
       case "business": return <Briefcase size={32} />;
-      case "artificial-intelligence": return <Brain size={32} />;
-      case "programming": return <Code size={32} />;
-      default: return <Folder size={32} />;
+      default: return <AlertCircle size={32} />;
     }
   };
   
   const handleAddCategory = (data: CategoryFormData) => {
     addCategory(data);
     setIsAddCategoryDialogOpen(false);
+  };
+
+  const getSortOptionIcon = () => {
+    switch (sortOption) {
+      case "az": return <ArrowDownAZ size={16} />;
+      case "za": return <ArrowUpZA size={16} />;
+      case "newest": return <Clock size={16} />;
+      case "oldest": return <CalendarIcon size={16} />;
+    }
+  };
+
+  const getSortOptionText = () => {
+    switch (sortOption) {
+      case "az": return "A to Z";
+      case "za": return "Z to A";
+      case "newest": return "Newest First";
+      case "oldest": return "Oldest First";
+    }
   };
 
   return (
@@ -69,7 +129,7 @@ export default function Categories() {
               <Input 
                 type="text" 
                 placeholder="Search categories..." 
-                className="pl-11 bg-black/40 border-white/10"
+                className="pl-11 bg-black/40 dark:bg-black/40 border-white/10 dark:border-white/10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -77,10 +137,32 @@ export default function Categories() {
           </div>
           
           <div>
-            <Button variant="outline" className="w-full gap-2">
-              <Filter size={16} />
-              Sort Categories
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full gap-2">
+                  {getSortOptionIcon()}
+                  Sort: {getSortOptionText()}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => setSortOption("az")} className={sortOption === "az" ? "bg-primary/20" : ""}>
+                  <ArrowDownAZ className="mr-2 h-4 w-4" />
+                  <span>A to Z</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortOption("za")} className={sortOption === "za" ? "bg-primary/20" : ""}>
+                  <ArrowUpZA className="mr-2 h-4 w-4" />
+                  <span>Z to A</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortOption("newest")} className={sortOption === "newest" ? "bg-primary/20" : ""}>
+                  <Clock className="mr-2 h-4 w-4" />
+                  <span>Newest First</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortOption("oldest")} className={sortOption === "oldest" ? "bg-primary/20" : ""}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <span>Oldest First</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
         

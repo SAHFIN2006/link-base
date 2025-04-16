@@ -1,16 +1,18 @@
 
 import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
-import { Menu, X, Moon, Sun, Github } from "lucide-react";
+import { Menu, X, Moon, Sun, Github, ExternalLink } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTheme } from "@/context/theme-context";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
   const isMobile = useIsMobile();
+  const { theme, setTheme } = useTheme();
 
   // Handle scroll detection for background change
   useEffect(() => {
@@ -27,7 +29,7 @@ export function Navbar() {
   }, [location.pathname]);
 
   const navClasses = `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-    isScrolled ? "py-3 bg-black/70 backdrop-blur-lg shadow-md" : "py-5"
+    isScrolled ? "py-3 bg-black/70 dark:bg-black/70 backdrop-blur-lg shadow-md" : "py-5"
   }`;
 
   const navLinks = [
@@ -48,10 +50,10 @@ export function Navbar() {
             <Link
               key={link.path}
               to={link.path}
-              className={`text-sm font-medium transition-colors hover:text-white ${
+              className={`text-sm font-medium transition-colors hover:text-white dark:hover:text-white ${
                 location.pathname === link.path
-                  ? "text-white"
-                  : "text-muted-foreground"
+                  ? "text-white dark:text-white"
+                  : "text-muted-foreground dark:text-muted-foreground"
               }`}
             >
               {link.title}
@@ -61,8 +63,17 @@ export function Navbar() {
 
         {/* Theme toggle and github button */}
         <div className="hidden md:flex items-center gap-4">
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="rounded-full"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? (
+              <Sun className="h-5 w-5 text-yellow-400" />
+            ) : (
+              <Moon className="h-5 w-5 text-slate-700" />
+            )}
             <span className="sr-only">Toggle theme</span>
           </Button>
           <Button variant="outline" size="sm" className="gap-2">
@@ -73,7 +84,7 @@ export function Navbar() {
 
         {/* Mobile menu button */}
         <button
-          className="md:hidden text-white p-1"
+          className="md:hidden text-white dark:text-white p-1"
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Toggle menu"
         >
@@ -83,7 +94,7 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {isOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-black/95 backdrop-blur-lg border-t border-white/10 animate-fade-in-bottom">
+        <div className="md:hidden absolute top-full left-0 right-0 bg-black/95 dark:bg-black/95 backdrop-blur-lg border-t border-white/10 animate-fade-in-bottom">
           <div className="container px-4 py-4 mx-auto flex flex-col gap-4">
             {navLinks.map((link) => (
               <Link
@@ -91,16 +102,24 @@ export function Navbar() {
                 to={link.path}
                 className={`py-2 px-4 text-sm font-medium rounded-md transition-colors ${
                   location.pathname === link.path
-                    ? "bg-primary/20 text-white"
-                    : "text-muted-foreground hover:bg-white/5"
+                    ? "bg-primary/20 text-white dark:text-white"
+                    : "text-muted-foreground dark:text-muted-foreground hover:bg-white/5"
                 }`}
               >
                 {link.title}
               </Link>
             ))}
             <div className="flex items-center justify-between pt-2 mt-2 border-t border-white/10">
-              <Button variant="ghost" size="icon">
-                <Sun className="h-5 w-5" />
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-5 w-5 text-yellow-400" />
+                ) : (
+                  <Moon className="h-5 w-5 text-slate-700" />
+                )}
                 <span className="sr-only">Toggle theme</span>
               </Button>
               <Button variant="outline" size="sm" className="gap-2">
