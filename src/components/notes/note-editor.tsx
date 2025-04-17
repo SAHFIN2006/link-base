@@ -1,16 +1,14 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { useDatabase } from "@/context/database-context";
 import { Save, Trash } from "lucide-react";
 import { MathJax, MathJaxContext } from "better-react-mathjax";
 import ReactMarkdown from "react-markdown";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import "katex/dist/katex.min.css";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useDatabase } from "@/context/database-context";
 
 interface Note {
   id: string;
@@ -26,77 +24,33 @@ interface NoteEditorProps {
 }
 
 export function NoteEditor({ categoryId }: NoteEditorProps) {
+  const { 
+    notes, 
+    getNotesByCategory, 
+    addNote, 
+    updateNote, 
+    deleteNote 
+  } = useDatabase();
   const { toast } = useToast();
-  const [notes, setNotes] = useState<Note[]>([]);
   const [activeNote, setActiveNote] = useState<Note | null>(null);
   const [editMode, setEditMode] = useState(true);
 
   // Load notes for this category
   useEffect(() => {
-    loadNotes();
+    getNotesByCategory(categoryId);
   }, [categoryId]);
   
-  const loadNotes = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('notes')
-        .select('*')
-        .eq('category_id', categoryId)
-        .order('created_at', { ascending: false }) as { data: any[], error: any };
-      
-      if (error) throw error;
-      
-      const formattedNotes: Note[] = (data || []).map(note => ({
-        id: note.id,
-        title: note.title,
-        content: note.content || '',
-        categoryId: note.category_id,
-        createdAt: note.created_at,
-        updatedAt: note.updated_at
-      }));
-      
-      setNotes(formattedNotes);
-      
-      // Set active note to the first one if available
-      if (formattedNotes.length > 0 && !activeNote) {
-        setActiveNote(formattedNotes[0]);
-      }
-    } catch (err) {
-      console.error("Error loading notes:", err);
-      toast({
-        title: "Error",
-        description: "Failed to load notes",
-        variant: "destructive"
-      });
-    }
-  };
-
+  const filteredNotes = notes.filter(note => note.category_id === categoryId);
+  
   // Create a new note
   const handleCreateNote = async () => {
     try {
-      const newNoteData = {
+      const newNote = await addNote({
         title: "New Note",
         content: "",
         category_id: categoryId
-      };
+      });
       
-      const { data, error } = await supabase
-        .from('notes')
-        .insert([newNoteData])
-        .select() as { data: any[], error: any };
-      
-      if (error) throw error;
-      
-      const newNote: Note = {
-        id: data[0].id,
-        title: data[0].title,
-        content: data[0].content || '',
-        categoryId: data[0].category_id,
-        createdAt: data[0].created_at,
-        updatedAt: data[0].updated_at
-      };
-      
-      setNotes(prev => [newNote, ...prev]);
       setActiveNote(newNote);
       setEditMode(true);
     } catch (err) {
@@ -114,20 +68,10 @@ export function NoteEditor({ categoryId }: NoteEditorProps) {
     if (!activeNote) return;
     
     try {
-      const { error } = await supabase
-        .from('notes')
-        .update({
-          title: activeNote.title,
-          content: activeNote.content
-        })
-        .eq('id', activeNote.id);
-      
-      if (error) throw error;
-      
-      // Update local notes array
-      setNotes(notes.map(note => 
-        note.id === activeNote.id ? activeNote : note
-      ));
+      await updateNote(activeNote.id, {
+        title: activeNote.title,
+        content: activeNote.content
+      });
       
       toast({
         title: "Success",
@@ -148,20 +92,12 @@ export function NoteEditor({ categoryId }: NoteEditorProps) {
     if (!activeNote) return;
     
     try {
-      const { error } = await supabase
-        .from('notes')
-        .delete()
-        .eq('id', activeNote.id);
-      
-      if (error) throw error;
-      
-      // Update local notes array
-      const updatedNotes = notes.filter(note => note.id !== activeNote.id);
-      setNotes(updatedNotes);
+      await deleteNote(activeNote.id);
       
       // Set active note to the first one if available
-      if (updatedNotes.length > 0) {
-        setActiveNote(updatedNotes[0]);
+      const remainingNotes = filteredNotes.filter(note => note.id !== activeNote.id);
+      if (remainingNotes.length > 0) {
+        setActiveNote(remainingNotes[0]);
       } else {
         setActiveNote(null);
       }

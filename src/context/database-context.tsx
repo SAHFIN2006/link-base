@@ -1,9 +1,7 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-// Define types for our data model
 export interface Category {
   id: string;
   name: string;
@@ -30,8 +28,8 @@ export interface Note {
   title: string;
   content: string;
   categoryId: string;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface FileResource {
@@ -42,18 +40,16 @@ export interface FileResource {
   type: string;
   categoryId: string;
   url: string;
-  createdAt: string;
+  created_at: string;
 }
 
 interface DatabaseContextType {
-  // Categories
   categories: Category[];
   getCategory: (id: string) => Category | undefined;
   addCategory: (category: Omit<Category, "id" | "createdAt" | "updatedAt">) => Promise<Category>;
   updateCategory: (id: string, data: Partial<Omit<Category, "id" | "createdAt" | "updatedAt">>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
   
-  // Resources
   resources: Resource[];
   getResourcesByCategory: (categoryId: string) => Resource[];
   getFavoriteResources: () => Resource[];
@@ -62,26 +58,32 @@ interface DatabaseContextType {
   deleteResource: (id: string) => Promise<void>;
   toggleFavorite: (id: string) => Promise<void>;
   
-  // Search
+  notes: Note[];
+  getNotesByCategory: (categoryId: string) => Note[];
+  addNote: (noteData: Omit<Note, "id" | "created_at" | "updated_at">) => Promise<Note>;
+  updateNote: (id: string, data: Partial<Omit<Note, "id" | "created_at" | "updated_at">>) => Promise<void>;
+  deleteNote: (id: string) => Promise<void>;
+  
+  files: FileResource[];
+  getFilesByCategory: (categoryId: string) => FileResource[];
+  addFile: (fileData: Omit<FileResource, "id" | "created_at">) => Promise<FileResource>;
+  deleteFile: (id: string, path: string) => Promise<void>;
+  
   searchResources: (query: string) => Resource[];
   
-  // Stats
   getCategoryStats: () => {
     totalCategories: number;
     totalResources: number;
     favoriteResources: number;
   };
   
-  // Import/Export
   importData: (data: { categories: Category[], resources: Resource[] }) => Promise<void>;
   exportData: () => { categories: Category[], resources: Resource[] };
 
-  // Connection status
   isLoading: boolean;
   error: string | null;
 }
 
-// Create context with default values
 const DatabaseContext = createContext<DatabaseContextType>({
   categories: [],
   getCategory: () => undefined,
@@ -96,6 +98,17 @@ const DatabaseContext = createContext<DatabaseContextType>({
   updateResource: async () => {},
   deleteResource: async () => {},
   toggleFavorite: async () => {},
+  
+  notes: [],
+  getNotesByCategory: () => [],
+  addNote: async () => ({ id: "", title: "", content: "", categoryId: "", created_at: "", updated_at: "" }),
+  updateNote: async () => {},
+  deleteNote: async () => {},
+  
+  files: [],
+  getFilesByCategory: () => [],
+  addFile: async () => ({ id: "", name: "", path: "", size: 0, type: "", url: "", category_id: "", created_at: "" }),
+  deleteFile: async () => {},
   
   searchResources: () => [],
   
@@ -115,16 +128,16 @@ interface DatabaseProviderProps {
 export function DatabaseProvider({ children }: DatabaseProviderProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [files, setFiles] = useState<FileResource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Load data from Supabase on mount
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoading(true);
         
-        // Load categories
         const { data: categoriesData, error: categoriesError } = await supabase
           .from('categories')
           .select('*')
@@ -132,14 +145,24 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
           
         if (categoriesError) throw categoriesError;
         
-        // Load resources
         const { data: resourcesData, error: resourcesError } = await supabase
           .from('resources')
           .select('*');
           
         if (resourcesError) throw resourcesError;
         
-        // Transform the data to match our interfaces
+        const { data: notesData, error: notesError } = await supabase
+          .from('notes')
+          .select('*');
+          
+        if (notesError) throw notesError;
+        
+        const { data: filesData, error: filesError } = await supabase
+          .from('files')
+          .select('*');
+          
+        if (filesError) throw filesError;
+        
         const transformedCategories = categoriesData.map(cat => ({
           id: cat.id,
           name: cat.name,
@@ -161,8 +184,30 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
           updatedAt: res.updated_at
         }));
         
+        const transformedNotes = notesData.map(note => ({
+          id: note.id,
+          title: note.title,
+          content: note.content || '',
+          categoryId: note.category_id,
+          created_at: note.created_at,
+          updated_at: note.updated_at
+        }));
+        
+        const transformedFiles = filesData.map(file => ({
+          id: file.id,
+          name: file.name,
+          path: file.path,
+          size: file.size,
+          type: file.type,
+          url: file.url,
+          category_id: file.category_id,
+          created_at: file.created_at
+        }));
+        
         setCategories(transformedCategories);
         setResources(transformedResources);
+        setNotes(transformedNotes);
+        setFiles(transformedFiles);
         setIsLoading(false);
       } catch (err) {
         console.error("Error loading data from Supabase:", err);
@@ -178,7 +223,6 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
     
     loadData();
     
-    // Set up real-time subscriptions
     const categoriesChannel = supabase
       .channel('public:categories')
       .on('postgres_changes', 
@@ -200,8 +244,29 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         }
       )
       .subscribe();
+      
+    const notesChannel = supabase
+      .channel('public:notes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'notes' },
+        (payload) => {
+          console.log('Notes change received!', payload);
+          loadData(); // Reload all data when changes occur
+        }
+      )
+      .subscribe();
+      
+    const filesChannel = supabase
+      .channel('public:files')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'files' },
+        (payload) => {
+          console.log('Files change received!', payload);
+          loadData(); // Reload all data when changes occur
+        }
+      )
+      .subscribe();
 
-    // Listen for import data event
     const handleImportData = (e: CustomEvent) => {
       if (e.detail) {
         importData(e.detail);
@@ -213,11 +278,12 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
     return () => {
       supabase.removeChannel(categoriesChannel);
       supabase.removeChannel(resourcesChannel);
+      supabase.removeChannel(notesChannel);
+      supabase.removeChannel(filesChannel);
       window.removeEventListener('import-data', handleImportData as EventListener);
     };
   }, []);
   
-  // Category operations
   const getCategory = (id: string) => {
     return categories.find(category => category.id === id);
   };
@@ -302,7 +368,6 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
     }
   };
   
-  // Resource operations
   const getResourcesByCategory = (categoryId: string) => {
     return resources.filter(resource => resource.categoryId === categoryId);
   };
@@ -422,7 +487,163 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
     }
   };
   
-  // Search
+  const getNotesByCategory = (categoryId: string) => {
+    return notes.filter(note => note.category_id === categoryId);
+  };
+
+  const addNote = async (noteData: Omit<Note, "id" | "created_at" | "updated_at">) => {
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .insert([{
+          title: noteData.title,
+          content: noteData.content,
+          category_id: noteData.category_id
+        }])
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      const newNote: Note = {
+        id: data.id,
+        title: data.title,
+        content: data.content || '',
+        category_id: data.category_id,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+      
+      setNotes(prev => [...prev, newNote]);
+      return newNote;
+    } catch (err) {
+      console.error("Error adding note:", err);
+      toast({
+        title: "Error",
+        description: "Failed to add note. Please try again.",
+        variant: "destructive"
+      });
+      throw err;
+    }
+  };
+
+  const updateNote = async (id: string, data: Partial<Omit<Note, "id" | "created_at" | "updated_at">>) => {
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .update({
+          title: data.title,
+          content: data.content
+        })
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      setNotes(prevNotes => 
+        prevNotes.map(note => 
+          note.id === id 
+            ? { ...note, ...data, updated_at: new Date().toISOString() } 
+            : note
+        )
+      );
+    } catch (err) {
+      console.error("Error updating note:", err);
+      toast({
+        title: "Error",
+        description: "Failed to update note. Please try again.",
+        variant: "destructive"
+      });
+      throw err;
+    }
+  };
+
+  const deleteNote = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
+    } catch (err) {
+      console.error("Error deleting note:", err);
+      toast({
+        title: "Error",
+        description: "Failed to delete note. Please try again.",
+        variant: "destructive"
+      });
+      throw err;
+    }
+  };
+
+  const getFilesByCategory = (categoryId: string) => {
+    return files.filter(file => file.category_id === categoryId);
+  };
+
+  const addFile = async (fileData: Omit<FileResource, "id" | "created_at">) => {
+    try {
+      const { data, error } = await supabase
+        .from('files')
+        .insert([{
+          name: fileData.name,
+          path: fileData.path,
+          size: fileData.size,
+          type: fileData.type,
+          url: fileData.url,
+          category_id: fileData.category_id
+        }])
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      const newFile: FileResource = {
+        id: data.id,
+        name: data.name,
+        path: data.path,
+        size: data.size,
+        type: data.type,
+        url: data.url,
+        category_id: data.category_id,
+        created_at: data.created_at
+      };
+      
+      setFiles(prev => [...prev, newFile]);
+      return newFile;
+    } catch (err) {
+      console.error("Error adding file:", err);
+      toast({
+        title: "Error",
+        description: "Failed to add file. Please try again.",
+        variant: "destructive"
+      });
+      throw err;
+    }
+  };
+
+  const deleteFile = async (id: string, path: string) => {
+    try {
+      const { error: dbError } = await supabase
+        .from('files')
+        .delete()
+        .eq('id', id);
+        
+      if (dbError) throw dbError;
+      
+      setFiles(prevFiles => prevFiles.filter(file => file.id !== id));
+    } catch (err) {
+      console.error("Error deleting file:", err);
+      toast({
+        title: "Error",
+        description: "Failed to delete file. Please try again.",
+        variant: "destructive"
+      });
+      throw err;
+    }
+  };
+
   const searchResources = (query: string) => {
     const lowerQuery = query.toLowerCase();
     return resources.filter(
@@ -433,7 +654,6 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
     );
   };
   
-  // Stats - real-time
   const getCategoryStats = () => {
     return {
       totalCategories: categories.length,
@@ -442,12 +662,10 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
     };
   };
   
-  // Import/Export functions
   const importData = async (data: { categories: Category[], resources: Resource[] }) => {
     try {
       setIsLoading(true);
       
-      // First import categories
       if (data.categories && data.categories.length > 0) {
         const categoriesToImport = data.categories.map(cat => ({
           name: cat.name,
@@ -462,12 +680,9 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         if (error) throw error;
       }
       
-      // Then import resources (after a small delay to ensure categories are created)
       if (data.resources && data.resources.length > 0) {
-        // Wait for categories to be synchronized
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Get fresh categories to match by name
         const { data: freshCategories } = await supabase
           .from('categories')
           .select('*');
@@ -478,7 +693,6 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         });
         
         const resourcesToImport = data.resources.map(res => {
-          // Try to find the matching category by name
           const categoryName = data.categories.find(c => c.id === res.categoryId)?.name;
           const categoryId = categoryName ? categoryMap.get(categoryName) : null;
           
@@ -504,7 +718,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         description: `Imported ${data.categories.length} categories and ${data.resources.length} resources.`,
       });
       
-      // Data will be reloaded through the real-time subscription
+      setIsLoading(false);
     } catch (err) {
       console.error("Error importing data:", err);
       setIsLoading(false);
@@ -540,6 +754,17 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         deleteResource,
         toggleFavorite,
         
+        notes,
+        getNotesByCategory,
+        addNote,
+        updateNote,
+        deleteNote,
+        
+        files,
+        getFilesByCategory,
+        addFile,
+        deleteFile,
+        
         searchResources,
         
         getCategoryStats,
@@ -556,7 +781,6 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
   );
 }
 
-// Custom hook to use the database context
 export function useDatabase() {
   const context = useContext(DatabaseContext);
   if (context === undefined) {

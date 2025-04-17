@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,7 @@ import {
   File, 
   FileText, 
   Image as ImageIcon, 
-  File as FilePdf, 
+  FileText as FilePdf, 
   Archive,
   Code,
   Table,
@@ -20,6 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
+import { useDatabase } from "@/context/database-context";
 
 interface FileUploadProps {
   categoryId: string;
@@ -37,16 +37,21 @@ interface FileItem {
 }
 
 export function FileUpload({ categoryId }: FileUploadProps) {
-  const [files, setFiles] = useState<FileItem[]>([]);
+  const { 
+    files, 
+    getFilesByCategory, 
+    addFile, 
+    deleteFile 
+  } = useDatabase();
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Initial fetch
+  // Fetch files for the current category
   useEffect(() => {
-    fetchFiles();
+    getFilesByCategory(categoryId);
   }, [categoryId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,7 +74,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
         
         // Upload file to Supabase Storage
         const { error: uploadError, data } = await supabase.storage
-          .from('resources')
+          .from('file_uploads')
           .upload(filePath, file, {
             cacheControl: '3600',
             upsert: false
@@ -81,34 +86,22 @@ export function FileUpload({ categoryId }: FileUploadProps) {
         
         // Get public URL
         const { data: urlData } = supabase.storage
-          .from('resources')
+          .from('file_uploads')
           .getPublicUrl(filePath);
           
-        // Save file metadata to database - we'll use a direct insert syntax
-        // that doesn't rely on the type definitions
-        const { error: metadataError } = await supabase
-          .from('files')
-          .insert([
-            { 
-              name: file.name, 
-              path: filePath, 
-              size: file.size, 
-              type: file.type, 
-              category_id: categoryId,
-              url: urlData.publicUrl
-            }
-          ] as any);
-          
-        if (metadataError) {
-          throw metadataError;
-        }
+        // Save file metadata
+        await addFile({
+          name: file.name, 
+          path: filePath, 
+          size: file.size, 
+          type: file.type, 
+          category_id: categoryId,
+          url: urlData.publicUrl
+        });
         
         // Update progress
         setProgress(Math.round(((i + 1) / selectedFiles.length) * 100));
       }
-      
-      // Fetch files after upload
-      fetchFiles();
       
       toast({
         title: "Files uploaded successfully",
@@ -131,53 +124,15 @@ export function FileUpload({ categoryId }: FileUploadProps) {
     }
   };
 
-  const fetchFiles = async () => {
-    try {
-      // Use a more direct query that doesn't rely on the type definitions
-      const { data, error } = await supabase
-        .from('files')
-        .select('*')
-        .eq('category_id', categoryId)
-        .order('created_at', { ascending: false }) as { data: FileItem[], error: any };
-        
-      if (error) {
-        throw error;
-      }
-      
-      setFiles(data || []);
-    } catch (error) {
-      console.error("Error fetching files:", error);
-      toast({
-        title: "Failed to load files",
-        description: "There was an error loading your files",
-        variant: "destructive"
-      });
-    }
-  };
-
   const handleDelete = async (id: string, path: string) => {
     try {
       // Delete from storage
-      const { error: storageError } = await supabase.storage
-        .from('resources')
+      await supabase.storage
+        .from('file_uploads')
         .remove([path]);
         
-      if (storageError) {
-        throw storageError;
-      }
-      
-      // Delete from database - use a more direct approach
-      const { error: dbError } = await supabase
-        .from('files')
-        .delete()
-        .eq('id', id) as { error: any };
-        
-      if (dbError) {
-        throw dbError;
-      }
-      
-      // Update local state
-      setFiles(files.filter(file => file.id !== id));
+      // Delete from database
+      await deleteFile(id, path);
       
       toast({
         title: "File deleted",
@@ -195,7 +150,8 @@ export function FileUpload({ categoryId }: FileUploadProps) {
 
   // Filter files based on search query
   const filteredFiles = files.filter(file => 
-    file.name.toLowerCase().includes(searchQuery.toLowerCase())
+    file.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+    file.category_id === categoryId
   );
 
   // Get file icon based on file type
