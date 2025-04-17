@@ -27,7 +27,7 @@ export interface Note {
   id: string;
   title: string;
   content: string;
-  categoryId: string;
+  category_id: string;
   created_at: string;
   updated_at: string;
 }
@@ -38,7 +38,7 @@ export interface FileResource {
   path: string;
   size: number;
   type: string;
-  categoryId: string;
+  category_id: string;
   url: string;
   created_at: string;
 }
@@ -188,7 +188,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
           id: note.id,
           title: note.title,
           content: note.content || '',
-          categoryId: note.category_id,
+          category_id: note.category_id,
           created_at: note.created_at,
           updated_at: note.updated_at
         }));

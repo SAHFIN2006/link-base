@@ -1,329 +1,326 @@
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 
-// Define Profile Interface
-interface Profile {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  avatar_url: string;
-  social_links: Record<string, string>;
-  bio: string;
-}
+const formSchema = z.object({
+  firstName: z.string().min(2, {
+    message: 'First name must be at least 2 characters.',
+  }),
+  lastName: z.string().min(2, {
+    message: 'Last name must be at least 2 characters.',
+  }),
+  email: z.string().email({
+    message: 'Please enter a valid email address.',
+  }),
+  avatarUrl: z.string().optional(),
+  bio: z.string().optional(),
+  twitter: z.string().optional(),
+  github: z.string().optional(),
+  linkedin: z.string().optional(),
+  website: z.string().optional(),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 export function ProfileForm() {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
+  const [loading, setLoading] = useState(true);
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>({
-    github: "",
-    twitter: "",
-    linkedin: "",
-    facebook: "",
-    instagram: "",
-    discord: "",
-    reddit: ""
+    twitter: '',
+    github: '',
+    linkedin: '',
+    website: '',
   });
-  const [bio, setBio] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      avatarUrl: '',
+      bio: '',
+      twitter: '',
+      github: '',
+      linkedin: '',
+      website: '',
+    },
+  });
 
-  // Create profile table helper function - this is a workaround until a profiles table exists
-  const initProfileTable = async () => {
-    try {
-      // This is a workaround - in a production app, we would have the profiles table created via SQL
-      // Since we can't create tables from the client code easily, we're adding this check
-      const { data, error } = await supabase.from('profiles').select('count');
-      
-      // If there's an error (table doesn't exist), we'll catch it and show a toast
-      if (error && error.code === '42P01') {
-        console.error("Profiles table doesn't exist yet");
-        toast({
-          title: "Database Setup Required",
-          description: "The profiles table needs to be created. Please contact the administrator.",
-          variant: "destructive"
-        });
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("Error checking profiles table:", error);
-      return false;
-    }
-  };
-
-  // Load profile data
   useEffect(() => {
-    const loadProfile = async () => {
-      // Check if profiles table exists first
-      const tableExists = await initProfileTable();
-      if (!tableExists) return;
-      
+    const loadUserProfile = async () => {
       try {
-        setIsLoading(true);
+        setLoading(true);
         
-        // In a real app with auth, we would get the user ID from the auth context
-        // For now, we'll try to load any profile if it exists
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          throw new Error('No user logged in');
+        }
+        
+        // Get profile information
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
-          .limit(1)
-          .maybeSingle();
-          
-        if (error) throw error;
+          .eq('id', user.id)
+          .single();
+        
+        if (error) {
+          if (error.code === 'PGRST116') {
+            // Profile doesn't exist, create one
+            await supabase.from('profiles').insert({
+              id: user.id,
+              first_name: '',
+              last_name: '',
+              email: user.email,
+            });
+          } else {
+            throw error;
+          }
+        }
         
         if (data) {
-          setFirstName(data.first_name || "");
-          setLastName(data.last_name || "");
-          setEmail(data.email || "");
-          setAvatarUrl(data.avatar_url || "");
-          setSocialLinks(data.social_links || {
-            github: "",
-            twitter: "",
-            linkedin: "",
-            facebook: "",
-            instagram: "",
-            discord: "",
-            reddit: ""
+          form.reset({
+            firstName: data.first_name || '',
+            lastName: data.last_name || '',
+            email: data.email || user.email || '',
+            avatarUrl: data.avatar_url || '',
+            bio: '',
           });
-          setBio(data.bio || "");
+          
+          if (data.social_links) {
+            const links = data.social_links as Record<string, string>;
+            setSocialLinks({
+              twitter: links.twitter || '',
+              github: links.github || '',
+              linkedin: links.linkedin || '',
+              website: links.website || '',
+            });
+            
+            form.setValue('twitter', links.twitter || '');
+            form.setValue('github', links.github || '');
+            form.setValue('linkedin', links.linkedin || '');
+            form.setValue('website', links.website || '');
+          }
         }
       } catch (error) {
-        console.error("Error loading profile:", error);
+        console.error('Error loading profile:', error);
         toast({
-          title: "Error",
-          description: "Failed to load profile data",
-          variant: "destructive"
+          title: 'Error',
+          description: 'Failed to load profile data',
+          variant: 'destructive',
         });
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
     
-    loadProfile();
-  }, [toast]);
-  
-  // Save profile data
-  const handleSave = async () => {
-    // Check if profiles table exists first
-    const tableExists = await initProfileTable();
-    if (!tableExists) return;
-    
+    loadUserProfile();
+  }, [form]);
+
+  const onSubmit = async (values: FormValues) => {
     try {
-      setIsLoading(true);
+      setLoading(true);
       
-      const profileData = {
-        first_name: firstName,
-        last_name: lastName,
-        email: email,
-        avatar_url: avatarUrl,
-        social_links: socialLinks,
-        bio: bio
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('No user logged in');
+      }
+      
+      const socialLinksData = {
+        twitter: values.twitter,
+        github: values.github,
+        linkedin: values.linkedin,
+        website: values.website,
       };
       
-      // In a real app with auth, we'd use upsert with the actual user ID
-      // For now, we'll just insert a new record or update if one exists
       const { error } = await supabase
         .from('profiles')
-        .upsert([profileData as any])
-        .select();
-        
+        .update({
+          first_name: values.firstName,
+          last_name: values.lastName,
+          email: values.email,
+          avatar_url: values.avatarUrl,
+          social_links: socialLinksData,
+        })
+        .eq('id', user.id);
+      
       if (error) throw error;
       
       toast({
-        title: "Profile saved",
-        description: "Your profile has been updated successfully",
+        title: 'Profile updated',
+        description: 'Your profile has been updated successfully',
       });
     } catch (error) {
-      console.error("Error saving profile:", error);
+      console.error('Error updating profile:', error);
       toast({
-        title: "Error",
-        description: "Failed to save profile data",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to update profile',
+        variant: 'destructive',
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  };
-  
-  // Handle social link changes
-  const handleSocialLinkChange = (platform: string, value: string) => {
-    setSocialLinks(prev => ({
-      ...prev,
-      [platform]: value
-    }));
-  };
-  
-  // Get initials for avatar fallback
-  const getInitials = () => {
-    if (firstName && lastName) {
-      return `${firstName[0]}${lastName[0]}`.toUpperCase();
-    } else if (firstName) {
-      return firstName[0].toUpperCase();
-    } else if (email) {
-      return email[0].toUpperCase();
-    }
-    return "U";
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>Your Profile</CardTitle>
-        <CardDescription>
-          Manage your personal information and how others see you
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex flex-col md:flex-row gap-6">
-          <div className="md:w-1/3 flex flex-col items-center">
-            <Avatar className="w-24 h-24 mb-4">
-              <AvatarImage src={avatarUrl} />
-              <AvatarFallback>{getInitials()}</AvatarFallback>
-            </Avatar>
-            <div className="text-center">
-              <Label htmlFor="avatar" className="block mb-2">Profile Picture URL</Label>
-              <Input
-                id="avatar"
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-                placeholder="https://example.com/avatar.jpg"
-                className="text-center"
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <div className="flex flex-col md:flex-row gap-8">
+          <div className="md:w-1/3">
+            <div className="flex flex-col items-center space-y-4">
+              <Avatar className="w-32 h-32">
+                <AvatarImage src={form.getValues().avatarUrl} />
+                <AvatarFallback>
+                  {form.getValues().firstName?.charAt(0) || ''}
+                  {form.getValues().lastName?.charAt(0) || ''}
+                </AvatarFallback>
+              </Avatar>
+              <FormField
+                control={form.control}
+                name="avatarUrl"
+                render={({ field }) => (
+                  <FormItem className="w-full">
+                    <FormLabel>Avatar URL</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://example.com/avatar.jpg" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
           </div>
           
-          <div className="md:w-2/3 space-y-4">
+          <div className="md:w-2/3 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="firstName">First Name</Label>
-                <Input
-                  id="firstName"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="John"
-                />
-              </div>
-              <div>
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input
-                  id="lastName"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Doe"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="john.doe@example.com"
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
             
-            <div>
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea
-                id="bio"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="Tell us about yourself..."
-                rows={3}
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <Separator />
+            
+            <h3 className="text-lg font-medium">Social Links</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="twitter"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Twitter</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://twitter.com/username" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="github"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>GitHub</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://github.com/username" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="linkedin"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>LinkedIn</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://linkedin.com/in/username" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="website"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
           </div>
         </div>
         
-        <div>
-          <h3 className="text-lg font-semibold mb-3">Social Media</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="github">GitHub</Label>
-              <Input
-                id="github"
-                value={socialLinks.github}
-                onChange={(e) => handleSocialLinkChange("github", e.target.value)}
-                placeholder="username"
-              />
-            </div>
-            <div>
-              <Label htmlFor="twitter">Twitter</Label>
-              <Input
-                id="twitter"
-                value={socialLinks.twitter}
-                onChange={(e) => handleSocialLinkChange("twitter", e.target.value)}
-                placeholder="username"
-              />
-            </div>
-            <div>
-              <Label htmlFor="linkedin">LinkedIn</Label>
-              <Input
-                id="linkedin"
-                value={socialLinks.linkedin}
-                onChange={(e) => handleSocialLinkChange("linkedin", e.target.value)}
-                placeholder="username"
-              />
-            </div>
-            <div>
-              <Label htmlFor="facebook">Facebook</Label>
-              <Input
-                id="facebook"
-                value={socialLinks.facebook}
-                onChange={(e) => handleSocialLinkChange("facebook", e.target.value)}
-                placeholder="username"
-              />
-            </div>
-            <div>
-              <Label htmlFor="instagram">Instagram</Label>
-              <Input
-                id="instagram"
-                value={socialLinks.instagram}
-                onChange={(e) => handleSocialLinkChange("instagram", e.target.value)}
-                placeholder="username"
-              />
-            </div>
-            <div>
-              <Label htmlFor="discord">Discord</Label>
-              <Input
-                id="discord"
-                value={socialLinks.discord}
-                onChange={(e) => handleSocialLinkChange("discord", e.target.value)}
-                placeholder="username#0000"
-              />
-            </div>
-            <div>
-              <Label htmlFor="reddit">Reddit</Label>
-              <Input
-                id="reddit"
-                value={socialLinks.reddit}
-                onChange={(e) => handleSocialLinkChange("reddit", e.target.value)}
-                placeholder="u/username"
-              />
-            </div>
-          </div>
+        <div className="flex justify-end">
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Saving...' : 'Save Profile'}
+          </Button>
         </div>
-      </CardContent>
-      <CardFooter className="flex justify-end">
-        <Button onClick={handleSave} disabled={isLoading}>
-          {isLoading ? "Saving..." : "Save Profile"}
-        </Button>
-      </CardFooter>
-    </Card>
+      </form>
+    </Form>
   );
 }

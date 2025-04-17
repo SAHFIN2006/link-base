@@ -7,7 +7,7 @@ import {
   File, 
   FileText, 
   Image as ImageIcon, 
-  FileText as FilePdf, 
+  FileText as FileTextIcon, 
   Archive,
   Code,
   Table,
@@ -23,17 +23,6 @@ import { useDatabase } from "@/context/database-context";
 
 interface FileUploadProps {
   categoryId: string;
-}
-
-interface FileItem {
-  id: string;
-  name: string;
-  path: string;
-  size: number;
-  type: string;
-  url: string;
-  category_id: string;
-  created_at: string;
 }
 
 export function FileUpload({ categoryId }: FileUploadProps) {
@@ -52,7 +41,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
   // Fetch files for the current category
   useEffect(() => {
     getFilesByCategory(categoryId);
-  }, [categoryId]);
+  }, [categoryId, getFilesByCategory]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -157,7 +146,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
   // Get file icon based on file type
   const getFileIcon = (fileType: string) => {
     if (fileType.includes('image')) return <ImageIcon className="h-8 w-8 text-blue-500" />;
-    if (fileType.includes('pdf')) return <FilePdf className="h-8 w-8 text-red-500" />;
+    if (fileType.includes('pdf')) return <FileTextIcon className="h-8 w-8 text-red-500" />;
     if (fileType.includes('zip') || fileType.includes('rar')) return <Archive className="h-8 w-8 text-yellow-500" />;
     if (fileType.includes('text')) return <FileText className="h-8 w-8 text-gray-500" />;
     if (fileType.includes('code') || fileType.includes('json') || fileType.includes('html')) return <Code className="h-8 w-8 text-green-500" />;

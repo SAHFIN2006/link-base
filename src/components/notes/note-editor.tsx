@@ -10,15 +10,6 @@ import "katex/dist/katex.min.css";
 import { useToast } from "@/hooks/use-toast";
 import { useDatabase } from "@/context/database-context";
 
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  categoryId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 interface NoteEditorProps {
   categoryId: string;
 }
@@ -32,13 +23,13 @@ export function NoteEditor({ categoryId }: NoteEditorProps) {
     deleteNote 
   } = useDatabase();
   const { toast } = useToast();
-  const [activeNote, setActiveNote] = useState<Note | null>(null);
+  const [activeNote, setActiveNote] = useState<any>(null);
   const [editMode, setEditMode] = useState(true);
 
   // Load notes for this category
   useEffect(() => {
     getNotesByCategory(categoryId);
-  }, [categoryId]);
+  }, [categoryId, getNotesByCategory]);
   
   const filteredNotes = notes.filter(note => note.category_id === categoryId);
   
