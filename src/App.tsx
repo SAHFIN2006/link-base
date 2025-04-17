@@ -15,6 +15,7 @@ import MyLinks from "./pages/MyLinks";
 import NotFound from "./pages/NotFound";
 import Documentation from "./pages/Documentation";
 import About from "./pages/About";
+import Analytics from "./pages/Analytics";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/my-links" element={<MyLinks />} />
               <Route path="/documentation" element={<Documentation />} />
               <Route path="/about" element={<About />} />
+              <Route path="/analytics" element={<Analytics />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

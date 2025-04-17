@@ -1,188 +1,90 @@
 
-# 🔗 LinkBase - Your Personal Technology Resource Manager
+# LinkBase: Resource Organization and Discovery Platform
 
-![LinkBase Banner](https://placehold.co/1200x400?text=LinkBase)
+![LinkBase Platform](https://i.imgur.com/XQGsZcL.png)
 
-<p align="center">
-  <a href="#features">Features</a> •
-  <a href="#demo">Demo</a> •
-  <a href="#tech-stack">Tech Stack</a> •
-  <a href="#getting-started">Getting Started</a> •
-  <a href="#usage">Usage</a> •
-  <a href="#developer-guide">Developer Guide</a> •
-  <a href="#license">License</a>
-</p>
+LinkBase is a modern web application designed to help users organize, categorize, and discover technology resources across various domains. With an intuitive interface and powerful features, it serves as your personal gateway to the best technology resources on the web.
 
-LinkBase is a comprehensive platform for organizing, categorizing, and discovering valuable technology resources. It's designed for developers, researchers, and tech enthusiasts who want to maintain a curated collection of useful links and resources across various technology domains.
+## Features
 
-## ✨ Features
+### Core Functionality
+- **Resource Management**: Add, edit, and delete web resources with titles, descriptions, URLs, and tags.
+- **Category Organization**: Group resources into customizable categories with icons.
+- **Favorites**: Mark resources as favorites for quick access.
+- **Search**: Powerful search functionality with category filtering.
+- **Keyboard Shortcuts**: Navigate and interact with the app efficiently using keyboard shortcuts.
 
-- **Resource Management**: Save, organize, and categorize all your important tech links in one place
-- **Category Organization**: Pre-defined tech categories with descriptive icons for easy navigation
-- **Search Functionality**: Quickly find resources using the search feature with category filters
-- **Responsive Design**: Fully responsive interface that works on desktop, tablet, and mobile devices
-- **Dark/Light Mode**: Toggle between dark and light themes based on your preference
-- **Database Integration**: Powered by Supabase for reliable data storage and retrieval
-- **Favorites System**: Mark resources as favorites for quick access
-- **Tag System**: Add tags to resources for better organization and discovery
+### Advanced Features
+- **Analytics Dashboard**: Visual insights into your resource collection through charts and statistics.
+- **Tag Suggestions**: Smart tag suggestions based on category and existing resources.
+- **Import/Export**: Back up or transfer your data collection.
+- **Media Resources**: Add YouTube videos alongside traditional web links.
+- **Responsive Design**: Works seamlessly across desktop and mobile devices.
 
-## 🎮 Demo
+## Tech Stack
 
-Visit the live demo at: [https://linkbase-demo.com](https://linkbase-demo.com)
+### Frontend
+- **React**: UI component library
+- **TypeScript**: Type-safe JavaScript
+- **React Router**: Client-side routing
+- **TanStack Query**: Data fetching and state management
+- **Framer Motion**: Animations and transitions
+- **Lucide Icons**: Comprehensive icon library
+- **Tailwind CSS**: Utility-first CSS framework
+- **Shadcn/UI**: Component library built on Radix UI
 
-## 🛠️ Tech Stack
+### Backend
+- **Supabase**: Database, authentication, and real-time functionality
+- **PostgreSQL**: Relational database
 
-<p align="center">
-  <a href="https://skillicons.dev">
-    <img src="https://skillicons.dev/icons?i=react,ts,vite,tailwind,supabase" />
-  </a>
-</p>
+### Development Tools
+- **Vite**: Fast build tooling
+- **ESLint**: Code linting
+- **Prettier**: Code formatting
 
-- **Frontend Framework**: [React](https://reactjs.org/) with [TypeScript](https://www.typescriptlang.org/)
-- **Build Tool**: [Vite](https://vitejs.dev/) for lightning-fast development and optimized production builds
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) for utility-first styling
-- **UI Components**: [shadcn/ui](https://ui.shadcn.com/) for beautiful, accessible components
-- **Database**: [Supabase](https://supabase.com/) for PostgreSQL database and realtime capabilities
-- **Routing**: [React Router](https://reactrouter.com/) for navigation
-- **Icons**: [Lucide React](https://lucide.dev/) for beautiful, consistent icons
-- **Animation**: [Framer Motion](https://www.framer.com/motion/) for smooth animations
-- **Form Handling**: [React Hook Form](https://react-hook-form.com/) for efficient form state management
-- **Charts**: [Recharts](https://recharts.org/) for data visualization (where applicable)
+## Using LinkBase
 
-## 🚀 Getting Started
+### For Basic Users
 
-### For Users
+1. **Browse Categories**: Explore pre-defined resource categories on the home page.
+2. **Search Resources**: Use the search bar to find specific resources by keywords.
+3. **View Resources**: Click on any resource card to visit the linked website.
+4. **Mark Favorites**: Click the star icon on any resource to add it to your favorites.
 
-1. Visit [LinkBase](https://linkbase-demo.com)
-2. Browse existing categories or use the search function to find resources
-3. Add your own resources by clicking on "Add New Resource"
-4. Organize resources by categories and tags
-5. Mark important resources as favorites for quick access
+### For Power Users
+
+1. **Customize Categories**: Create your own categories with custom icons.
+2. **Add Resources**: Add new resources to any category with detailed metadata.
+3. **Tag Management**: Use suggested tags or create custom ones to organize resources.
+4. **Keyboard Shortcuts**: Press `?` to view all available keyboard shortcuts.
+5. **Import/Export**: Back up your data or import from another source.
+6. **Analytics**: View usage statistics and resource distribution.
 
 ### For Developers
 
-#### Prerequisites
+1. **Component Structure**: The app follows a component-based architecture with reusable UI elements.
+2. **State Management**: Data is managed through React contexts and TanStack Query.
+3. **Database Structure**: Two main tables - Categories and Resources with appropriate relations.
+4. **Real-time Updates**: All changes sync in real-time across clients.
+5. **Styling System**: Uses Tailwind CSS with custom design tokens and a comprehensive theming system.
 
-- Node.js (v16 or newer)
-- npm or yarn package manager
+## Keyboard Shortcuts
 
-#### Installation
+- `?` - Show keyboard shortcuts menu
+- `Shift + /` - Focus search bar
+- `Alt + C` - Go to Categories page
+- `Alt + M` - Go to My Links page
+- `Alt + N` - Add new resource
+- `Alt + A` - Go to Analytics page
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/linkbase.git
-   cd linkbase
-   ```
+## Performance and Accessibility
 
-2. Install dependencies:
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
-
-3. Set up environment variables:
-   Create a `.env` file in the root directory and add the following:
-   ```
-   VITE_SUPABASE_URL=your_supabase_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
-
-4. Start the development server:
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
-
-5. Open your browser and visit `http://localhost:5173`
-
-## 📖 Usage
-
-### Basic Usage
-
-- **Browse Categories**: Explore different technology categories from the homepage or categories page
-- **Search Resources**: Use the search bar to find specific resources by keyword
-- **View Resource Details**: Click on a resource card to view its details and visit the link
-- **Add Resources**: Click the "Add New Resource" button to save a new link to your collection
-- **Favorite Resources**: Mark resources as favorites by clicking the star icon
-
-### Power User Features
-
-- **Advanced Search**: Use category filters to narrow down search results
-- **Resource Management**: Edit, delete, or favorite resources from the resource cards
-- **Tag Navigation**: Click on tags to find related resources
-- **Keyboard Shortcuts**: Use keyboard shortcuts for faster navigation (coming soon)
-- **Data Export/Import**: Export your link collection or import from other sources (coming soon)
-
-## 🧑‍💻 Developer Guide
-
-### Project Structure
-
-```
-linkbase/
-├── public/             # Static assets
-├── src/
-│   ├── components/     # Reusable UI components
-│   │   ├── ui/         # Base UI components
-│   │   └── dialogs/    # Modal dialogs
-│   ├── context/        # React context providers
-│   ├── hooks/          # Custom React hooks
-│   ├── integrations/   # External service integrations
-│   │   └── supabase/   # Supabase integration
-│   ├── lib/            # Utility functions
-│   └── pages/          # Page components
-├── .env                # Environment variables
-└── ...                 # Configuration files
-```
-
-### Key Components
-
-- **Layout**: Main layout component with navbar and footer
-- **Navbar**: Navigation bar with theme toggle and mobile menu
-- **Footer**: Footer with links and newsletter signup
-- **ResourceCard**: Card component for displaying resource items
-- **CategoryCard**: Card component for displaying category items
-
-### Database Schema
-
-LinkBase uses a Supabase PostgreSQL database with the following schema:
-
-1. **categories** table:
-   - id (UUID, Primary Key)
-   - name (Text)
-   - description (Text)
-   - icon (Text)
-   - created_at (Timestamp)
-   - updated_at (Timestamp)
-
-2. **resources** table:
-   - id (UUID, Primary Key)
-   - title (Text)
-   - url (Text)
-   - description (Text)
-   - category_id (UUID, Foreign Key to categories)
-   - tags (Text Array)
-   - favorite (Boolean)
-   - created_at (Timestamp)
-   - updated_at (Timestamp)
-
-### Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+- **Optimized Images**: All images are compressed and optimized for fast loading.
+- **Semantic HTML**: Proper HTML structure for better accessibility.
+- **Color Contrast**: High contrast ratios for readability.
+- **Responsive Design**: Works on all screen sizes from mobile to desktop.
+- **Dark/Light Modes**: Choose your preferred visual theme.
 
 ---
 
-<p align="center">
-  Made with ❤️ by Your Name
-</p>
+LinkBase is an ongoing project that welcomes contributions. Feel free to submit issues or pull requests to help improve the platform.

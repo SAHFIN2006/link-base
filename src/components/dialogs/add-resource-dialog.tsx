@@ -1,10 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useDatabase } from "@/context/database-context";
 
 export interface ResourceFormData {
   id?: string;
@@ -23,6 +24,21 @@ interface AddResourceDialogProps {
   onSave: (data: ResourceFormData) => void;
 }
 
+// Common tag suggestions by category
+const commonTags: Record<string, string[]> = {
+  // Default tags that could apply to any category
+  default: ["tutorial", "guide", "reference", "documentation", "free", "paid", "tool", "video", "book", "course"],
+  
+  // Technology specific tags
+  programming: ["javascript", "python", "react", "node", "typescript", "sql", "css", "html", "api", "library", "framework"],
+  "artificial-intelligence": ["machine-learning", "neural-networks", "deep-learning", "chatgpt", "natural-language", "computer-vision", "llm", "data-science"],
+  cybersecurity: ["encryption", "security", "privacy", "hacking", "certificates", "authentication", "firewall", "pentest"],
+  blockchain: ["crypto", "ethereum", "bitcoin", "nft", "web3", "defi", "wallet", "smart-contract"],
+  cloud: ["aws", "azure", "gcp", "serverless", "kubernetes", "docker", "devops", "saas"],
+  design: ["ui", "ux", "figma", "sketch", "prototype", "typography", "color", "accessibility"],
+  gaming: ["unity", "unreal", "3d", "game-design", "level-design", "assets", "physics", "multiplayer"],
+};
+
 export function AddResourceDialog({
   categories,
   initialData,
@@ -30,6 +46,7 @@ export function AddResourceDialog({
   onClose,
   onSave,
 }: AddResourceDialogProps) {
+  const { resources } = useDatabase();
   const [formData, setFormData] = useState<ResourceFormData>(
     initialData || {
       title: "",
@@ -40,8 +57,49 @@ export function AddResourceDialog({
     }
   );
   const [tagInput, setTagInput] = useState("");
-
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
+  const [mediaUrl, setMediaUrl] = useState("");
+  
   const isEditing = !!initialData?.id;
+  
+  // Update suggested tags when category changes
+  useEffect(() => {
+    if (formData.categoryId) {
+      const categoryName = categories.find(c => c.id === formData.categoryId)?.name.toLowerCase() || "";
+      
+      // Get category-specific tags from our predefined list
+      const categorySpecificTags = Object.keys(commonTags).find(key => 
+        categoryName.includes(key) || key.includes(categoryName)
+      );
+      
+      // Get tags from similar resources in the same category
+      const tagsFromSameCategory = resources
+        .filter(r => r.categoryId === formData.categoryId)
+        .flatMap(r => r.tags || []);
+        
+      // Combine and deduplicate tags
+      const combined = [...new Set([
+        ...(categorySpecificTags ? commonTags[categorySpecificTags] : []),
+        ...commonTags.default,
+        ...tagsFromSameCategory
+      ])];
+      
+      // Filter out tags already added to the current resource
+      const filtered = combined.filter(tag => !formData.tags.includes(tag));
+      
+      // Sort by frequency of use in existing resources
+      const tagCounts = filtered.reduce<Record<string, number>>((acc, tag) => {
+        const count = resources.filter(r => (r.tags || []).includes(tag)).length;
+        acc[tag] = count;
+        return acc;
+      }, {});
+      
+      const sorted = filtered.sort((a, b) => (tagCounts[b] || 0) - (tagCounts[a] || 0));
+      
+      // Take top 10 suggestions
+      setSuggestedTags(sorted.slice(0, 10));
+    }
+  }, [formData.categoryId, formData.tags, categories, resources]);
   
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -50,11 +108,11 @@ export function AddResourceDialog({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddTag = () => {
-    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+  const handleAddTag = (tag: string = tagInput.trim()) => {
+    if (tag && !formData.tags.includes(tag)) {
       setFormData((prev) => ({
         ...prev,
-        tags: [...prev.tags, tagInput.trim()],
+        tags: [...prev.tags, tag],
       }));
       setTagInput("");
     }
@@ -65,6 +123,36 @@ export function AddResourceDialog({
       ...prev,
       tags: prev.tags.filter((t) => t !== tag),
     }));
+  };
+
+  const handleAddMedia = () => {
+    if (mediaUrl.trim()) {
+      // Extract YouTube video ID
+      let videoId = '';
+      if (mediaUrl.includes('youtube.com/watch?v=')) {
+        videoId = new URL(mediaUrl).searchParams.get('v') || '';
+      } else if (mediaUrl.includes('youtu.be/')) {
+        videoId = mediaUrl.split('youtu.be/')[1]?.split('?')[0];
+      }
+      
+      if (videoId) {
+        // For YouTube videos, store in a format that indicates it's a media resource
+        setFormData(prev => ({
+          ...prev,
+          url: `https://www.youtube.com/embed/${videoId}`,
+          tags: [...prev.tags, 'video', 'youtube']
+        }));
+        setMediaUrl('');
+      } else {
+        // Handle other media types if needed
+        setFormData(prev => ({
+          ...prev,
+          url: mediaUrl,
+          tags: [...prev.tags, 'media']
+        }));
+        setMediaUrl('');
+      }
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -160,12 +248,33 @@ export function AddResourceDialog({
                 <Button 
                   type="button" 
                   variant="secondary"
-                  onClick={handleAddTag}
+                  onClick={() => handleAddTag()}
                   className="ml-2"
                 >
                   Add
                 </Button>
               </div>
+              
+              {/* Suggested tags */}
+              {suggestedTags.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs text-muted-foreground mb-1">Suggested tags:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {suggestedTags.map(tag => (
+                      <Button
+                        key={tag}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => handleAddTag(tag)}
+                      >
+                        {tag}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               {formData.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -186,6 +295,32 @@ export function AddResourceDialog({
                   ))}
                 </div>
               )}
+            </div>
+            
+            {/* Media URL input */}
+            <div className="grid gap-2 border-t pt-4 mt-2">
+              <Label htmlFor="mediaUrl">Add Media Resource (YouTube URL)</Label>
+              <div className="flex">
+                <Input
+                  id="mediaUrl"
+                  value={mediaUrl}
+                  onChange={(e) => setMediaUrl(e.target.value)}
+                  placeholder="https://youtube.com/watch?v=..."
+                  type="url"
+                />
+                <Button 
+                  type="button" 
+                  variant="secondary"
+                  onClick={handleAddMedia}
+                  className="ml-2"
+                  disabled={!mediaUrl.trim()}
+                >
+                  Add Media
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Add YouTube videos or other media resources
+              </p>
             </div>
           </div>
           

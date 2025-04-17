@@ -18,6 +18,7 @@ Object.entries(LucideIcons).forEach(([name, component]) => {
     name !== 'createLucideIcon' && 
     name !== 'icons' &&
     name !== 'default' &&
+    name !== '__esModule' &&
     name !== 'type'
   ) {
     iconMap[name] = component as LucideIcon;

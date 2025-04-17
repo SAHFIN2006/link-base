@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,6 +51,10 @@ interface DatabaseContextType {
     totalResources: number;
     favoriteResources: number;
   };
+  
+  // Import/Export
+  importData: (data: { categories: Category[], resources: Resource[] }) => Promise<void>;
+  exportData: () => { categories: Category[], resources: Resource[] };
 
   // Connection status
   isLoading: boolean;
@@ -75,6 +80,9 @@ const DatabaseContext = createContext<DatabaseContextType>({
   searchResources: () => [],
   
   getCategoryStats: () => ({ totalCategories: 0, totalResources: 0, favoriteResources: 0 }),
+  
+  importData: async () => {},
+  exportData: () => ({ categories: [], resources: [] }),
   
   isLoading: false,
   error: null
@@ -172,10 +180,20 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         }
       )
       .subscribe();
+
+    // Listen for import data event
+    const handleImportData = (e: CustomEvent) => {
+      if (e.detail) {
+        importData(e.detail);
+      }
+    };
+
+    window.addEventListener('import-data', handleImportData as EventListener);
       
     return () => {
       supabase.removeChannel(categoriesChannel);
       supabase.removeChannel(resourcesChannel);
+      window.removeEventListener('import-data', handleImportData as EventListener);
     };
   }, []);
   
@@ -404,6 +422,87 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
     };
   };
   
+  // Import/Export functions
+  const importData = async (data: { categories: Category[], resources: Resource[] }) => {
+    try {
+      setIsLoading(true);
+      
+      // First import categories
+      if (data.categories && data.categories.length > 0) {
+        const categoriesToImport = data.categories.map(cat => ({
+          name: cat.name,
+          description: cat.description,
+          icon: cat.icon
+        }));
+        
+        const { error } = await supabase
+          .from('categories')
+          .insert(categoriesToImport);
+          
+        if (error) throw error;
+      }
+      
+      // Then import resources (after a small delay to ensure categories are created)
+      if (data.resources && data.resources.length > 0) {
+        // Wait for categories to be synchronized
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Get fresh categories to match by name
+        const { data: freshCategories } = await supabase
+          .from('categories')
+          .select('*');
+          
+        const categoryMap = new Map();
+        freshCategories.forEach((cat: any) => {
+          categoryMap.set(cat.name, cat.id);
+        });
+        
+        const resourcesToImport = data.resources.map(res => {
+          // Try to find the matching category by name
+          const categoryName = data.categories.find(c => c.id === res.categoryId)?.name;
+          const categoryId = categoryName ? categoryMap.get(categoryName) : null;
+          
+          return {
+            title: res.title,
+            url: res.url,
+            description: res.description,
+            category_id: categoryId || null,
+            tags: res.tags,
+            favorite: res.favorite
+          };
+        });
+        
+        const { error } = await supabase
+          .from('resources')
+          .insert(resourcesToImport);
+          
+        if (error) throw error;
+      }
+      
+      toast({
+        title: "Import Successful",
+        description: `Imported ${data.categories.length} categories and ${data.resources.length} resources.`,
+      });
+      
+      // Data will be reloaded through the real-time subscription
+    } catch (err) {
+      console.error("Error importing data:", err);
+      setIsLoading(false);
+      toast({
+        title: "Import Failed",
+        description: "There was an error importing your data. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const exportData = () => {
+    return {
+      categories,
+      resources
+    };
+  };
+  
   return (
     <DatabaseContext.Provider
       value={{
@@ -424,6 +523,9 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         searchResources,
         
         getCategoryStats,
+        
+        importData,
+        exportData,
         
         isLoading,
         error

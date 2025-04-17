@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -22,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useHotkeys } from "@/hooks/use-hotkeys";
 
 export default function Index() {
   const { categories, resources, getFavoriteResources, getCategoryStats, searchResources } = useDatabase();
@@ -32,37 +32,68 @@ export default function Index() {
   const [searchFilter, setSearchFilter] = useState<string>("all");
   const stats = getCategoryStats();
   
-  // Get default icons for featured categories
+  useHotkeys("Shift+/", () => {
+    document.querySelector<HTMLInputElement>('input[placeholder="Search for resources..."]')?.focus();
+  }, "Focus search");
+  
+  useHotkeys("Alt+c", () => {
+    window.location.href = "/categories";
+  }, "Go to Categories");
+  
+  useHotkeys("Alt+m", () => {
+    window.location.href = "/my-links";
+  }, "Go to My Links");
+  
+  useHotkeys("Alt+n", () => {
+    window.location.href = "/my-links";
+    setTimeout(() => {
+      document.querySelector<HTMLButtonElement>('button:has(.plus-icon)')?.click();
+    }, 500);
+  }, "Add new resource");
+  
+  useHotkeys("Alt+a", () => {
+    window.location.href = "/analytics";
+  }, "Go to Analytics");
+  
   const getCategoryIcon = (categoryId: string) => {
-    switch(categoryId) {
-      case "artificial-intelligence": return <Brain size={32} />;
-      case "blockchain": return <Database size={32} />;
-      case "cybersecurity": return <Shield size={32} />;
-      case "gaming": return <Gamepad size={32} />;
-      case "machine-learning": return <Bot size={32} />;
-      case "automation": return <Cog size={32} />;
-      case "nanotech": return <Cpu size={32} className="rotate-45" />;
-      case "programming": return <Code size={32} />;
-      case "statistics": return <BarChart size={32} />;
-      case "data-science": return <Layers size={32} />;
-      case "robotics": return <Cpu size={32} />;
-      case "software": return <Folder size={32} />;
-      case "hardware": return <Cpu size={32} />;
-      case "tech-stock": return <Monitor size={32} />;
-      case "news-events": return <Calendar size={32} />;
-      case "innovation": return <Zap size={32} />;
-      case "vault": return <Lock size={32} />;
-      case "business": return <Briefcase size={32} />;
-      default: return <AlertCircle size={32} />;
+    const iconMap: Record<string, JSX.Element> = {
+      "artificial-intelligence": <Brain size={32} />,
+      "blockchain": <Database size={32} />,
+      "cybersecurity": <Shield size={32} />,
+      "gaming": <Gamepad size={32} />,
+      "machine-learning": <Bot size={32} />,
+      "automation": <Cog size={32} />,
+      "nanotech": <Cpu size={32} className="rotate-45" />,
+      "programming": <Code size={32} />,
+      "statistics": <BarChart size={32} />,
+      "data-science": <Layers size={32} />,
+      "robotics": <Cpu size={32} />,
+      "software": <Folder size={32} />,
+      "hardware": <Cpu size={32} />,
+      "tech-stock": <Monitor size={32} />,
+      "news-events": <Calendar size={32} />,
+      "innovation": <Zap size={32} />,
+      "vault": <Lock size={32} />,
+      "business": <Briefcase size={32} />
+    };
+    
+    if (iconMap[categoryId]) {
+      return iconMap[categoryId];
     }
+    
+    const category = categories.find(c => c.id === categoryId);
+    if (category && category.icon && typeof LucideIcons[category.icon as keyof typeof LucideIcons] === 'function') {
+      const IconComponent = LucideIcons[category.icon as keyof typeof LucideIcons];
+      return <IconComponent size={32} />;
+    }
+    
+    return <AlertCircle size={32} />;
   };
 
-  // Get favorite resources
   useEffect(() => {
     setFavoriteResources(getFavoriteResources().slice(0, 4));
   }, [resources, getFavoriteResources]);
 
-  // Handle search
   const handleSearch = () => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -72,7 +103,6 @@ export default function Index() {
     
     let results = searchResources(searchQuery);
     
-    // Apply filter if needed
     if (searchFilter !== "all") {
       results = results.filter(item => item.categoryId === searchFilter);
     }
@@ -81,7 +111,6 @@ export default function Index() {
     setShowSearchResults(true);
   };
 
-  // Filter categories to show in order requested by user
   const orderedCategories = useMemo(() => {
     const categoryOrder = [
       "artificial-intelligence", "blockchain", "cybersecurity", "gaming", 
@@ -90,27 +119,47 @@ export default function Index() {
       "tech-stock", "news-events", "innovation", "vault", "business"
     ];
     
-    // Sort categories based on order
     return [...categories].sort((a, b) => {
       const indexA = categoryOrder.indexOf(a.id);
       const indexB = categoryOrder.indexOf(b.id);
-      // If category is not in the order list, put it at the end
       if (indexA === -1) return 1;
       if (indexB === -1) return -1;
       return indexA - indexB;
     });
   }, [categories]);
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, x: -50 },
+    visible: { 
+      opacity: 1, 
+      x: 0,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 12
+      }
+    }
+  };
+
   return (
     <Layout>
-      {/* Hero Section */}
-      <section className="relative py-20 overflow-hidden">
+      <section className="relative py-16 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-glow z-0" />
         
         <div className="container px-4 mx-auto relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <motion.h1 
-              className="text-5xl md:text-6xl font-bold mb-6 glow-text"
+              className="text-4xl md:text-5xl font-bold mb-6 glow-text font-display"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
@@ -119,7 +168,7 @@ export default function Index() {
             </motion.h1>
             
             <motion.p 
-              className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto"
+              className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto font-sans"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -128,7 +177,7 @@ export default function Index() {
             </motion.p>
             
             <motion.div
-              className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
+              className="flex flex-col sm:flex-row gap-4 justify-center mb-10"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
@@ -141,7 +190,7 @@ export default function Index() {
               </Button>
               <Button asChild variant="outline" size="lg" className="gap-2">
                 <Link to="/my-links">
-                  <Plus size={18} />
+                  <Plus size={18} className="plus-icon" />
                   Add New Resource
                 </Link>
               </Button>
@@ -170,16 +219,15 @@ export default function Index() {
         </div>
       </section>
       
-      {/* Search Section */}
-      <section className="py-12 bg-black/20 dark:bg-black/20">
+      <section className="py-8 bg-black/10 dark:bg-black/20 light:bg-gray-100/80">
         <div className="container px-4 mx-auto">
           <div className="max-w-3xl mx-auto">
             <div className="relative">
               <Search className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
               <Input 
                 type="text" 
-                placeholder="Search for resources..." 
-                className="pl-11 py-6 bg-black/40 dark:bg-black/40 border-white/10 dark:border-white/10 focus:border-primary h-14 text-lg"
+                placeholder="Search for resources... (Shift + / to focus)"
+                className="pl-11 py-6 bg-white/80 dark:bg-black/40 border-gray-200 dark:border-white/10 focus:border-primary h-14 text-lg search-input"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -187,7 +235,7 @@ export default function Index() {
               <div className="absolute right-2 top-2 flex gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-1">
+                    <Button variant="outline" size="sm" className="gap-1 bg-white/90 dark:bg-black/60">
                       <Filter size={14} />
                       <span className="hidden sm:inline-block">
                         {searchFilter === "all" ? "All Categories" : 
@@ -195,7 +243,7 @@ export default function Index() {
                       </span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56">
+                  <DropdownMenuContent className="w-56 bg-white/95 dark:bg-black/90 backdrop-blur-lg">
                     <DropdownMenuLabel>Filter By Category</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup className="max-h-[300px] overflow-y-auto">
@@ -220,7 +268,6 @@ export default function Index() {
               </div>
             </div>
             
-            {/* Search Results */}
             {showSearchResults && (
               <div className="mt-6">
                 {searchResults.length > 0 ? (
@@ -288,11 +335,10 @@ export default function Index() {
         </div>
       </section>
       
-      {/* Featured Categories */}
       <section className="py-16">
         <div className="container px-4 mx-auto">
           <div className="flex justify-between items-center mb-10">
-            <h2 className="text-3xl font-bold">Featured Categories</h2>
+            <h2 className="text-3xl font-bold font-display">Featured Categories</h2>
             <Button asChild variant="outline" className="gap-2">
               <Link to="/categories">
                 View All
@@ -301,21 +347,26 @@ export default function Index() {
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <motion.div 
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
             {orderedCategories.slice(0, 8).map((category, index) => (
-              <CategoryCard
-                key={category.id}
-                title={category.name}
-                icon={getCategoryIcon(category.id)}
-                path={`/category/${category.id}`}
-                delay={index}
-              />
+              <motion.div key={category.id} variants={cardVariants}>
+                <CategoryCard
+                  title={category.name}
+                  icon={getCategoryIcon(category.id)}
+                  path={`/category/${category.id}`}
+                  delay={index}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
       
-      {/* Favorite Resources */}
       {favoriteResources.length > 0 && (
         <section className="py-16 bg-black/20 dark:bg-black/20">
           <div className="container px-4 mx-auto">
@@ -350,7 +401,6 @@ export default function Index() {
         </section>
       )}
       
-      {/* Call to Action */}
       <section className="py-20">
         <div className="container px-4 mx-auto">
           <div className="glass-card rounded-2xl overflow-hidden">
