@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +9,7 @@ import ReactMarkdown from "react-markdown";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import "katex/dist/katex.min.css";
 import { useToast } from "@/hooks/use-toast";
-import { useDatabase } from "@/context/database-context";
+import { useDatabase, Note } from "@/context/database-context";
 
 interface NoteEditorProps {
   categoryId: string;
@@ -23,7 +24,7 @@ export function NoteEditor({ categoryId }: NoteEditorProps) {
     deleteNote 
   } = useDatabase();
   const { toast } = useToast();
-  const [activeNote, setActiveNote] = useState<any>(null);
+  const [activeNote, setActiveNote] = useState<Note | null>(null);
   const [editMode, setEditMode] = useState(true);
 
   // Load notes for this category
@@ -31,7 +32,7 @@ export function NoteEditor({ categoryId }: NoteEditorProps) {
     getNotesByCategory(categoryId);
   }, [categoryId, getNotesByCategory]);
   
-  const filteredNotes = notes.filter(note => note.category_id === categoryId);
+  const filteredNotes = getNotesByCategory(categoryId);
   
   // Create a new note
   const handleCreateNote = async () => {
@@ -39,7 +40,7 @@ export function NoteEditor({ categoryId }: NoteEditorProps) {
       const newNote = await addNote({
         title: "New Note",
         content: "",
-        category_id: categoryId
+        categoryId: categoryId
       });
       
       setActiveNote(newNote);

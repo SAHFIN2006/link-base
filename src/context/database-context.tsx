@@ -27,7 +27,7 @@ export interface Note {
   id: string;
   title: string;
   content: string;
-  category_id: string;
+  categoryId: string;
   created_at: string;
   updated_at: string;
 }
@@ -38,7 +38,7 @@ export interface FileResource {
   path: string;
   size: number;
   type: string;
-  category_id: string;
+  categoryId: string;
   url: string;
   created_at: string;
 }
@@ -107,7 +107,7 @@ const DatabaseContext = createContext<DatabaseContextType>({
   
   files: [],
   getFilesByCategory: () => [],
-  addFile: async () => ({ id: "", name: "", path: "", size: 0, type: "", url: "", category_id: "", created_at: "" }),
+  addFile: async () => ({ id: "", name: "", path: "", size: 0, type: "", url: "", categoryId: "", created_at: "" }),
   deleteFile: async () => {},
   
   searchResources: () => [],
@@ -188,7 +188,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
           id: note.id,
           title: note.title,
           content: note.content || '',
-          category_id: note.category_id,
+          categoryId: note.category_id,
           created_at: note.created_at,
           updated_at: note.updated_at
         }));
@@ -200,7 +200,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
           size: file.size,
           type: file.type,
           url: file.url,
-          category_id: file.category_id,
+          categoryId: file.category_id,
           created_at: file.created_at
         }));
         
@@ -488,7 +488,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
   };
   
   const getNotesByCategory = (categoryId: string) => {
-    return notes.filter(note => note.category_id === categoryId);
+    return notes.filter(note => note.categoryId === categoryId);
   };
 
   const addNote = async (noteData: Omit<Note, "id" | "created_at" | "updated_at">) => {
@@ -498,7 +498,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         .insert([{
           title: noteData.title,
           content: noteData.content,
-          category_id: noteData.category_id
+          category_id: noteData.categoryId
         }])
         .select()
         .single();
@@ -509,7 +509,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         id: data.id,
         title: data.title,
         content: data.content || '',
-        category_id: data.category_id,
+        categoryId: data.category_id,
         created_at: data.created_at,
         updated_at: data.updated_at
       };
@@ -533,7 +533,8 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         .from('notes')
         .update({
           title: data.title,
-          content: data.content
+          content: data.content,
+          category_id: data.categoryId
         })
         .eq('id', id);
         
@@ -579,7 +580,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
   };
 
   const getFilesByCategory = (categoryId: string) => {
-    return files.filter(file => file.category_id === categoryId);
+    return files.filter(file => file.categoryId === categoryId);
   };
 
   const addFile = async (fileData: Omit<FileResource, "id" | "created_at">) => {
@@ -592,7 +593,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
           size: fileData.size,
           type: fileData.type,
           url: fileData.url,
-          category_id: fileData.category_id
+          category_id: fileData.categoryId
         }])
         .select()
         .single();
@@ -606,7 +607,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         size: data.size,
         type: data.type,
         url: data.url,
-        category_id: data.category_id,
+        categoryId: data.category_id,
         created_at: data.created_at
       };
       
