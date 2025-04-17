@@ -38,7 +38,6 @@ export function useHotkeys(key: string, callback: () => void, description: strin
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     // Skip if any modal is open (indicated by a dialog element)
     const isModalOpen = document.querySelector('[role="dialog"]') !== null;
-    if (isModalOpen) return;
     
     // Don't trigger shortcuts when typing in input elements
     // except for explicitly allowed ones like "?" or "Shift+/"
@@ -69,6 +68,12 @@ export function useHotkeys(key: string, callback: () => void, description: strin
     Object.keys(globalShortcuts).forEach(shortcut => {
       if (shortcut.toLowerCase() === shortcutPressed.toLowerCase()) {
         event.preventDefault();
+        
+        // If we're in a modal, only allow the ? shortcut
+        if (isModalOpen && shortcut !== '?') {
+          return;
+        }
+        
         globalShortcuts[shortcut].callback();
       }
     });

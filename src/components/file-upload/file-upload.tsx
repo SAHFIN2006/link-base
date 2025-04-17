@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -7,13 +7,13 @@ import {
   Upload,
   File, 
   FileText, 
-  FileImage, 
-  FilePdf, 
-  FileArchive,
-  FileCode,
-  FileSpreadsheet,
-  FileVideo,
-  FileAudio,
+  Image as ImageIcon, 
+  File as FilePdf, 
+  Archive,
+  Code,
+  Table,
+  Video,
+  Music,
   MoreHorizontal,
   Trash2
 } from "lucide-react";
@@ -25,13 +25,29 @@ interface FileUploadProps {
   categoryId: string;
 }
 
+interface FileItem {
+  id: string;
+  name: string;
+  path: string;
+  size: number;
+  type: string;
+  url: string;
+  category_id: string;
+  created_at: string;
+}
+
 export function FileUpload({ categoryId }: FileUploadProps) {
-  const [files, setFiles] = useState<any[]>([]);
+  const [files, setFiles] = useState<FileItem[]>([]);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Initial fetch
+  useEffect(() => {
+    fetchFiles();
+  }, [categoryId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -68,7 +84,8 @@ export function FileUpload({ categoryId }: FileUploadProps) {
           .from('resources')
           .getPublicUrl(filePath);
           
-        // Save file metadata to database
+        // Save file metadata to database - we'll use a direct insert syntax
+        // that doesn't rely on the type definitions
         const { error: metadataError } = await supabase
           .from('files')
           .insert([
@@ -80,7 +97,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
               category_id: categoryId,
               url: urlData.publicUrl
             }
-          ]);
+          ] as any);
           
         if (metadataError) {
           throw metadataError;
@@ -116,11 +133,12 @@ export function FileUpload({ categoryId }: FileUploadProps) {
 
   const fetchFiles = async () => {
     try {
+      // Use a more direct query that doesn't rely on the type definitions
       const { data, error } = await supabase
         .from('files')
         .select('*')
         .eq('category_id', categoryId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }) as { data: FileItem[], error: any };
         
       if (error) {
         throw error;
@@ -137,11 +155,6 @@ export function FileUpload({ categoryId }: FileUploadProps) {
     }
   };
 
-  // Initial fetch
-  useState(() => {
-    fetchFiles();
-  });
-
   const handleDelete = async (id: string, path: string) => {
     try {
       // Delete from storage
@@ -153,11 +166,11 @@ export function FileUpload({ categoryId }: FileUploadProps) {
         throw storageError;
       }
       
-      // Delete from database
+      // Delete from database - use a more direct approach
       const { error: dbError } = await supabase
         .from('files')
         .delete()
-        .eq('id', id);
+        .eq('id', id) as { error: any };
         
       if (dbError) {
         throw dbError;
@@ -187,14 +200,14 @@ export function FileUpload({ categoryId }: FileUploadProps) {
 
   // Get file icon based on file type
   const getFileIcon = (fileType: string) => {
-    if (fileType.includes('image')) return <FileImage className="h-8 w-8 text-blue-500" />;
+    if (fileType.includes('image')) return <ImageIcon className="h-8 w-8 text-blue-500" />;
     if (fileType.includes('pdf')) return <FilePdf className="h-8 w-8 text-red-500" />;
-    if (fileType.includes('zip') || fileType.includes('rar')) return <FileArchive className="h-8 w-8 text-yellow-500" />;
+    if (fileType.includes('zip') || fileType.includes('rar')) return <Archive className="h-8 w-8 text-yellow-500" />;
     if (fileType.includes('text')) return <FileText className="h-8 w-8 text-gray-500" />;
-    if (fileType.includes('code') || fileType.includes('json') || fileType.includes('html')) return <FileCode className="h-8 w-8 text-green-500" />;
-    if (fileType.includes('sheet') || fileType.includes('excel') || fileType.includes('csv')) return <FileSpreadsheet className="h-8 w-8 text-green-500" />;
-    if (fileType.includes('video')) return <FileVideo className="h-8 w-8 text-purple-500" />;
-    if (fileType.includes('audio')) return <FileAudio className="h-8 w-8 text-pink-500" />;
+    if (fileType.includes('code') || fileType.includes('json') || fileType.includes('html')) return <Code className="h-8 w-8 text-green-500" />;
+    if (fileType.includes('sheet') || fileType.includes('excel') || fileType.includes('csv')) return <Table className="h-8 w-8 text-green-500" />;
+    if (fileType.includes('video')) return <Video className="h-8 w-8 text-purple-500" />;
+    if (fileType.includes('audio')) return <Music className="h-8 w-8 text-pink-500" />;
     return <File className="h-8 w-8 text-gray-500" />;
   };
 

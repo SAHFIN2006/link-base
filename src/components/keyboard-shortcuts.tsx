@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Keyboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { getAllShortcuts } from '@/hooks/use-hotkeys';
 import { useHotkeys } from '@/hooks/use-hotkeys';
 
@@ -34,6 +34,7 @@ export function KeyboardShortcutsButton() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Keyboard Shortcuts</DialogTitle>
+            <DialogDescription>Press these keyboard shortcuts to quickly navigate the application</DialogDescription>
           </DialogHeader>
           
           <div className="py-4">

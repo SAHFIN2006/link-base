@@ -3,429 +3,327 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Upload, User, X } from "lucide-react";
 
-interface ProfileFormProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-interface SocialLinks {
-  github?: string;
-  gitlab?: string;
-  twitter?: string;
-  facebook?: string;
-  instagram?: string;
-  linkedin?: string;
-  discord?: string;
-  reddit?: string;
-}
-
-interface UserProfile {
+// Define Profile Interface
+interface Profile {
   id: string;
   first_name: string;
   last_name: string;
   email: string;
-  avatar_url?: string;
-  social_links?: SocialLinks;
+  avatar_url: string;
+  social_links: Record<string, string>;
+  bio: string;
 }
 
-export function ProfileForm({ isOpen, onClose }: ProfileFormProps) {
-  const [profile, setProfile] = useState<UserProfile>({
-    id: '',
-    first_name: '',
-    last_name: '',
-    email: '',
-    social_links: {}
+export function ProfileForm() {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [socialLinks, setSocialLinks] = useState<Record<string, string>>({
+    github: "",
+    twitter: "",
+    linkedin: "",
+    facebook: "",
+    instagram: "",
+    discord: "",
+    reddit: ""
   });
+  const [bio, setBio] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Load user profile on mount
-  useEffect(() => {
-    if (isOpen) {
-      loadUserProfile();
+  // Create profile table helper function - this is a workaround until a profiles table exists
+  const initProfileTable = async () => {
+    try {
+      // This is a workaround - in a production app, we would have the profiles table created via SQL
+      // Since we can't create tables from the client code easily, we're adding this check
+      const { data, error } = await supabase.from('profiles').select('count');
+      
+      // If there's an error (table doesn't exist), we'll catch it and show a toast
+      if (error && error.code === '42P01') {
+        console.error("Profiles table doesn't exist yet");
+        toast({
+          title: "Database Setup Required",
+          description: "The profiles table needs to be created. Please contact the administrator.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error checking profiles table:", error);
+      return false;
     }
-  }, [isOpen]);
+  };
 
-  const loadUserProfile = async () => {
-    setIsLoading(true);
+  // Load profile data
+  useEffect(() => {
+    const loadProfile = async () => {
+      // Check if profiles table exists first
+      const tableExists = await initProfileTable();
+      if (!tableExists) return;
+      
+      try {
+        setIsLoading(true);
+        
+        // In a real app with auth, we would get the user ID from the auth context
+        // For now, we'll try to load any profile if it exists
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .limit(1)
+          .maybeSingle();
+          
+        if (error) throw error;
+        
+        if (data) {
+          setFirstName(data.first_name || "");
+          setLastName(data.last_name || "");
+          setEmail(data.email || "");
+          setAvatarUrl(data.avatar_url || "");
+          setSocialLinks(data.social_links || {
+            github: "",
+            twitter: "",
+            linkedin: "",
+            facebook: "",
+            instagram: "",
+            discord: "",
+            reddit: ""
+          });
+          setBio(data.bio || "");
+        }
+      } catch (error) {
+        console.error("Error loading profile:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load profile data",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadProfile();
+  }, [toast]);
+  
+  // Save profile data
+  const handleSave = async () => {
+    // Check if profiles table exists first
+    const tableExists = await initProfileTable();
+    if (!tableExists) return;
     
     try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoading(true);
       
-      if (!user) {
-        throw new Error("No authenticated user found");
-      }
+      const profileData = {
+        first_name: firstName,
+        last_name: lastName,
+        email: email,
+        avatar_url: avatarUrl,
+        social_links: socialLinks,
+        bio: bio
+      };
       
-      // Check if profile exists
-      const { data: profileData, error: profileError } = await supabase
+      // In a real app with auth, we'd use upsert with the actual user ID
+      // For now, we'll just insert a new record or update if one exists
+      const { error } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+        .upsert([profileData as any])
+        .select();
         
-      if (profileError && profileError.code !== 'PGRST116') {
-        throw profileError;
-      }
+      if (error) throw error;
       
-      if (profileData) {
-        setProfile({
-          id: profileData.id,
-          first_name: profileData.first_name || '',
-          last_name: profileData.last_name || '',
-          email: profileData.email || user.email || '',
-          avatar_url: profileData.avatar_url,
-          social_links: profileData.social_links || {}
-        });
-        
-        if (profileData.avatar_url) {
-          setAvatarPreview(profileData.avatar_url);
-        }
-      } else {
-        // Initialize with auth user data
-        setProfile({
-          id: user.id,
-          first_name: '',
-          last_name: '',
-          email: user.email || '',
-          social_links: {}
-        });
-      }
+      toast({
+        title: "Profile saved",
+        description: "Your profile has been updated successfully",
+      });
     } catch (error) {
-      console.error("Error loading user profile:", error);
+      console.error("Error saving profile:", error);
       toast({
         title: "Error",
-        description: "Failed to load your profile. Please try again.",
+        description: "Failed to save profile data",
         variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
   };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    
-    if (name.startsWith('social_')) {
-      const socialName = name.replace('social_', '');
-      setProfile({
-        ...profile,
-        social_links: {
-          ...profile.social_links,
-          [socialName]: value
-        }
-      });
-    } else {
-      setProfile({
-        ...profile,
-        [name]: value
-      });
-    }
+  
+  // Handle social link changes
+  const handleSocialLinkChange = (platform: string, value: string) => {
+    setSocialLinks(prev => ({
+      ...prev,
+      [platform]: value
+    }));
   };
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setAvatarFile(file);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  
+  // Get initials for avatar fallback
+  const getInitials = () => {
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    } else if (firstName) {
+      return firstName[0].toUpperCase();
+    } else if (email) {
+      return email[0].toUpperCase();
     }
-  };
-
-  const handleRemoveAvatar = () => {
-    setAvatarFile(null);
-    setAvatarPreview(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    
-    try {
-      // Upload avatar if changed
-      let avatarUrl = profile.avatar_url;
-      
-      if (avatarFile) {
-        const fileName = `${profile.id}-${Date.now()}`;
-        const { error: uploadError, data } = await supabase.storage
-          .from('avatars')
-          .upload(fileName, avatarFile, {
-            cacheControl: '3600',
-            upsert: false
-          });
-          
-        if (uploadError) {
-          throw uploadError;
-        }
-        
-        const { data: urlData } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(fileName);
-          
-        avatarUrl = urlData.publicUrl;
-      }
-      
-      // Update profile
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: profile.id,
-          first_name: profile.first_name,
-          last_name: profile.last_name,
-          email: profile.email,
-          avatar_url: avatarUrl,
-          social_links: profile.social_links,
-          updated_at: new Date().toISOString()
-        });
-        
-      if (updateError) {
-        throw updateError;
-      }
-      
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully",
-      });
-      
-      onClose();
-    } catch (error) {
-      console.error("Error saving profile:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save your profile. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSaving(false);
-    }
+    return "U";
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Your Profile</DialogTitle>
-          <DialogDescription>
-            Update your profile information. This will be used in analytics and contributor reports.
-          </DialogDescription>
-        </DialogHeader>
-        
-        {isLoading ? (
-          <div className="flex justify-center items-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-2">Loading profile...</span>
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader>
+        <CardTitle>Your Profile</CardTitle>
+        <CardDescription>
+          Manage your personal information and how others see you
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="md:w-1/3 flex flex-col items-center">
+            <Avatar className="w-24 h-24 mb-4">
+              <AvatarImage src={avatarUrl} />
+              <AvatarFallback>{getInitials()}</AvatarFallback>
+            </Avatar>
+            <div className="text-center">
+              <Label htmlFor="avatar" className="block mb-2">Profile Picture URL</Label>
+              <Input
+                id="avatar"
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+                placeholder="https://example.com/avatar.jpg"
+                className="text-center"
+              />
+            </div>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit}>
-            <div className="grid gap-6 py-4">
-              {/* Avatar */}
-              <div className="flex flex-col items-center gap-4">
-                <Avatar className="h-24 w-24">
-                  {avatarPreview ? (
-                    <AvatarImage src={avatarPreview} alt="Profile" />
-                  ) : (
-                    <AvatarFallback>
-                      <User className="h-12 w-12" />
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-                
-                <div className="flex gap-2">
-                  <Label
-                    htmlFor="avatarUpload"
-                    className="cursor-pointer flex items-center gap-1 px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
-                  >
-                    <Upload className="h-4 w-4" />
-                    {avatarPreview ? "Change" : "Upload"}
-                  </Label>
-                  <input
-                    id="avatarUpload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    className="hidden"
-                  />
-                  
-                  {avatarPreview && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRemoveAvatar}
-                      className="flex items-center gap-1"
-                    >
-                      <X className="h-4 w-4" />
-                      Remove
-                    </Button>
-                  )}
-                </div>
-              </div>
-              
-              {/* Personal Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="first_name">First Name</Label>
-                  <Input
-                    id="first_name"
-                    name="first_name"
-                    value={profile.first_name}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="last_name">Last Name</Label>
-                  <Input
-                    id="last_name"
-                    name="last_name"
-                    value={profile.last_name}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+          
+          <div className="md:w-2/3 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="firstName">First Name</Label>
                 <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={profile.email}
-                  onChange={handleChange}
-                  required
+                  id="firstName"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="John"
                 />
               </div>
-              
-              <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-4">Social Media Links</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="social_github">GitHub</Label>
-                    <Input
-                      id="social_github"
-                      name="social_github"
-                      placeholder="username"
-                      value={profile.social_links?.github || ''}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="social_gitlab">GitLab</Label>
-                    <Input
-                      id="social_gitlab"
-                      name="social_gitlab"
-                      placeholder="username"
-                      value={profile.social_links?.gitlab || ''}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="social_twitter">Twitter</Label>
-                    <Input
-                      id="social_twitter"
-                      name="social_twitter"
-                      placeholder="username"
-                      value={profile.social_links?.twitter || ''}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="social_linkedin">LinkedIn</Label>
-                    <Input
-                      id="social_linkedin"
-                      name="social_linkedin"
-                      placeholder="username"
-                      value={profile.social_links?.linkedin || ''}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="social_facebook">Facebook</Label>
-                    <Input
-                      id="social_facebook"
-                      name="social_facebook"
-                      placeholder="username"
-                      value={profile.social_links?.facebook || ''}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="social_instagram">Instagram</Label>
-                    <Input
-                      id="social_instagram"
-                      name="social_instagram"
-                      placeholder="username"
-                      value={profile.social_links?.instagram || ''}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="social_discord">Discord</Label>
-                    <Input
-                      id="social_discord"
-                      name="social_discord"
-                      placeholder="username#0000"
-                      value={profile.social_links?.discord || ''}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="social_reddit">Reddit</Label>
-                    <Input
-                      id="social_reddit"
-                      name="social_reddit"
-                      placeholder="u/username"
-                      value={profile.social_links?.reddit || ''}
-                      onChange={handleChange}
-                    />
-                  </div>
-                </div>
+              <div>
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Doe"
+                />
               </div>
             </div>
             
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={onClose} disabled={isSaving}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSaving}>
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
-              </Button>
-            </DialogFooter>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="john.doe@example.com"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="bio">Bio</Label>
+              <Textarea
+                id="bio"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Tell us about yourself..."
+                rows={3}
+              />
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <h3 className="text-lg font-semibold mb-3">Social Media</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="github">GitHub</Label>
+              <Input
+                id="github"
+                value={socialLinks.github}
+                onChange={(e) => handleSocialLinkChange("github", e.target.value)}
+                placeholder="username"
+              />
+            </div>
+            <div>
+              <Label htmlFor="twitter">Twitter</Label>
+              <Input
+                id="twitter"
+                value={socialLinks.twitter}
+                onChange={(e) => handleSocialLinkChange("twitter", e.target.value)}
+                placeholder="username"
+              />
+            </div>
+            <div>
+              <Label htmlFor="linkedin">LinkedIn</Label>
+              <Input
+                id="linkedin"
+                value={socialLinks.linkedin}
+                onChange={(e) => handleSocialLinkChange("linkedin", e.target.value)}
+                placeholder="username"
+              />
+            </div>
+            <div>
+              <Label htmlFor="facebook">Facebook</Label>
+              <Input
+                id="facebook"
+                value={socialLinks.facebook}
+                onChange={(e) => handleSocialLinkChange("facebook", e.target.value)}
+                placeholder="username"
+              />
+            </div>
+            <div>
+              <Label htmlFor="instagram">Instagram</Label>
+              <Input
+                id="instagram"
+                value={socialLinks.instagram}
+                onChange={(e) => handleSocialLinkChange("instagram", e.target.value)}
+                placeholder="username"
+              />
+            </div>
+            <div>
+              <Label htmlFor="discord">Discord</Label>
+              <Input
+                id="discord"
+                value={socialLinks.discord}
+                onChange={(e) => handleSocialLinkChange("discord", e.target.value)}
+                placeholder="username#0000"
+              />
+            </div>
+            <div>
+              <Label htmlFor="reddit">Reddit</Label>
+              <Input
+                id="reddit"
+                value={socialLinks.reddit}
+                onChange={(e) => handleSocialLinkChange("reddit", e.target.value)}
+                placeholder="u/username"
+              />
+            </div>
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter className="flex justify-end">
+        <Button onClick={handleSave} disabled={isLoading}>
+          {isLoading ? "Saving..." : "Save Profile"}
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

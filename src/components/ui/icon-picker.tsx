@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import * as LucideIcons from "lucide-react";
+import * as Icons from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +13,7 @@ type IconComponent = React.ForwardRefExoticComponent<React.PropsWithoutRef<React
 const iconMap: Record<string, IconComponent> = {};
 
 // Add only the actual icon components to our map
-Object.entries(LucideIcons).forEach(([name, component]) => {
+Object.entries(Icons).forEach(([name, component]) => {
   // Skip utility functions and non-component exports
   if (
     typeof component === 'function' && 
@@ -38,7 +38,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
   // Default to Folder icon if the selected icon doesn't exist
   const IconComponent = selectedIcon && iconMap[selectedIcon] 
     ? iconMap[selectedIcon] 
-    : LucideIcons.Folder;
+    : Icons.Folder;
 
   // Most commonly used icons for categories to show first
   const popularIcons = [

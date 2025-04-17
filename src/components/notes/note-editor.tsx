@@ -7,10 +7,10 @@ import { useDatabase } from "@/context/database-context";
 import { Save, Trash } from "lucide-react";
 import { MathJax, MathJaxContext } from "better-react-mathjax";
 import ReactMarkdown from "react-markdown";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import "katex/dist/katex.min.css";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Note {
   id: string;
@@ -26,69 +26,157 @@ interface NoteEditorProps {
 }
 
 export function NoteEditor({ categoryId }: NoteEditorProps) {
-  const { getNotesByCategory, addNote, updateNote, deleteNote } = useDatabase();
+  const { toast } = useToast();
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeNote, setActiveNote] = useState<Note | null>(null);
   const [editMode, setEditMode] = useState(true);
 
   // Load notes for this category
   useEffect(() => {
-    const loadNotes = async () => {
-      const categoryNotes = await getNotesByCategory(categoryId);
-      setNotes(categoryNotes);
+    loadNotes();
+  }, [categoryId]);
+  
+  const loadNotes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .select('*')
+        .eq('category_id', categoryId)
+        .order('created_at', { ascending: false }) as { data: any[], error: any };
+      
+      if (error) throw error;
+      
+      const formattedNotes: Note[] = (data || []).map(note => ({
+        id: note.id,
+        title: note.title,
+        content: note.content || '',
+        categoryId: note.category_id,
+        createdAt: note.created_at,
+        updatedAt: note.updated_at
+      }));
+      
+      setNotes(formattedNotes);
       
       // Set active note to the first one if available
-      if (categoryNotes.length > 0 && !activeNote) {
-        setActiveNote(categoryNotes[0]);
+      if (formattedNotes.length > 0 && !activeNote) {
+        setActiveNote(formattedNotes[0]);
       }
-    };
-    
-    loadNotes();
-  }, [categoryId, getNotesByCategory]);
+    } catch (err) {
+      console.error("Error loading notes:", err);
+      toast({
+        title: "Error",
+        description: "Failed to load notes",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Create a new note
   const handleCreateNote = async () => {
-    const newNote = await addNote({
-      title: "New Note",
-      content: "",
-      categoryId
-    });
-    
-    setNotes([...notes, newNote]);
-    setActiveNote(newNote);
-    setEditMode(true);
+    try {
+      const newNoteData = {
+        title: "New Note",
+        content: "",
+        category_id: categoryId
+      };
+      
+      const { data, error } = await supabase
+        .from('notes')
+        .insert([newNoteData])
+        .select() as { data: any[], error: any };
+      
+      if (error) throw error;
+      
+      const newNote: Note = {
+        id: data[0].id,
+        title: data[0].title,
+        content: data[0].content || '',
+        categoryId: data[0].category_id,
+        createdAt: data[0].created_at,
+        updatedAt: data[0].updated_at
+      };
+      
+      setNotes(prev => [newNote, ...prev]);
+      setActiveNote(newNote);
+      setEditMode(true);
+    } catch (err) {
+      console.error("Error creating note:", err);
+      toast({
+        title: "Error",
+        description: "Failed to create note",
+        variant: "destructive"
+      });
+    }
   };
 
   // Save the current note
   const handleSaveNote = async () => {
     if (!activeNote) return;
     
-    await updateNote(activeNote.id, {
-      title: activeNote.title,
-      content: activeNote.content
-    });
-    
-    // Update local notes array
-    setNotes(notes.map(note => 
-      note.id === activeNote.id ? activeNote : note
-    ));
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .update({
+          title: activeNote.title,
+          content: activeNote.content
+        })
+        .eq('id', activeNote.id);
+      
+      if (error) throw error;
+      
+      // Update local notes array
+      setNotes(notes.map(note => 
+        note.id === activeNote.id ? activeNote : note
+      ));
+      
+      toast({
+        title: "Success",
+        description: "Note saved successfully",
+      });
+    } catch (err) {
+      console.error("Error saving note:", err);
+      toast({
+        title: "Error",
+        description: "Failed to save note",
+        variant: "destructive"
+      });
+    }
   };
 
   // Delete the current note
   const handleDeleteNote = async () => {
     if (!activeNote) return;
     
-    await deleteNote(activeNote.id);
-    
-    // Update local notes array
-    const updatedNotes = notes.filter(note => note.id !== activeNote.id);
-    setNotes(updatedNotes);
-    
-    // Set active note to the first one if available
-    if (updatedNotes.length > 0) {
-      setActiveNote(updatedNotes[0]);
-    } else {
-      setActiveNote(null);
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .delete()
+        .eq('id', activeNote.id);
+      
+      if (error) throw error;
+      
+      // Update local notes array
+      const updatedNotes = notes.filter(note => note.id !== activeNote.id);
+      setNotes(updatedNotes);
+      
+      // Set active note to the first one if available
+      if (updatedNotes.length > 0) {
+        setActiveNote(updatedNotes[0]);
+      } else {
+        setActiveNote(null);
+      }
+      
+      toast({
+        title: "Success",
+        description: "Note deleted successfully",
+      });
+    } catch (err) {
+      console.error("Error deleting note:", err);
+      toast({
+        title: "Error",
+        description: "Failed to delete note",
+        variant: "destructive"
+      });
     }
   };
 
@@ -220,10 +308,7 @@ export function NoteEditor({ categoryId }: NoteEditorProps) {
                   <div className="prose prose-sm dark:prose-invert max-w-none p-4 border rounded-md min-h-[300px] overflow-y-auto">
                     <MathJaxContext>
                       <MathJax>
-                        <ReactMarkdown
-                          remarkPlugins={[remarkMath]}
-                          rehypePlugins={[rehypeKatex]}
-                        >
+                        <ReactMarkdown>
                           {activeNote.content}
                         </ReactMarkdown>
                       </MathJax>

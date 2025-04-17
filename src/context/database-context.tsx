@@ -25,6 +25,26 @@ export interface Resource {
   updatedAt: string;
 }
 
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  categoryId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FileResource {
+  id: string;
+  name: string;
+  path: string;
+  size: number;
+  type: string;
+  categoryId: string;
+  url: string;
+  createdAt: string;
+}
+
 interface DatabaseContextType {
   // Categories
   categories: Category[];
