@@ -1,5 +1,5 @@
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 
 interface Shortcut {
   key: string;
@@ -25,16 +25,26 @@ const globalShortcuts: ShortcutsMap = {};
  * @param description Description of what the shortcut does (for help modal)
  */
 export function useHotkeys(key: string, callback: () => void, description: string) {
+  const callbackRef = useRef(callback);
+  
+  // Update callback ref when callback changes
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
+  
   // Register shortcut
   useEffect(() => {
-    globalShortcuts[key] = { callback, description };
+    globalShortcuts[key] = { 
+      callback: () => callbackRef.current(), 
+      description 
+    };
     
     return () => {
       delete globalShortcuts[key];
     };
-  }, [key, callback, description]);
+  }, [key, description]);
   
-  // Key handler
+  // Key handler (defined outside to prevent recreation on each render)
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     // Skip if any modal is open (indicated by a dialog element)
     const isModalOpen = document.querySelector('[role="dialog"]') !== null;
@@ -81,6 +91,7 @@ export function useHotkeys(key: string, callback: () => void, description: strin
   
   // Add and remove event listener
   useEffect(() => {
+    // Using document-wide event listener ensures shortcuts work from any page
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);

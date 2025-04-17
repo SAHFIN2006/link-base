@@ -1,9 +1,6 @@
 
 import { Link } from "react-router-dom";
-import { 
-  Github, Twitter, Linkedin, Mail, 
-  ArrowRight, Heart, Book, Zap, Info
-} from "lucide-react";
+import { Github, Twitter, Linkedin, Mail, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/ui/logo";
@@ -68,14 +65,13 @@ export function Footer() {
         </div>
         
         {/* Middle Section with Links */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-12">
           <div>
             <h4 className="font-medium mb-3">Navigation</h4>
             <ul className="space-y-2">
               <li><Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">Home</Link></li>
               <li><Link to="/categories" className="text-muted-foreground hover:text-foreground transition-colors">Categories</Link></li>
               <li><Link to="/my-links" className="text-muted-foreground hover:text-foreground transition-colors">My Links</Link></li>
-              <li><Link to="/documentation" className="text-muted-foreground hover:text-foreground transition-colors">Documentation</Link></li>
             </ul>
           </div>
           
@@ -92,15 +88,6 @@ export function Footer() {
                   </Link>
                 </li>
               ))}
-            </ul>
-          </div>
-          
-          <div>
-            <h4 className="font-medium mb-3">Resources</h4>
-            <ul className="space-y-2">
-              <li><Link to="/documentation" className="text-muted-foreground hover:text-foreground transition-colors">Documentation</Link></li>
-              <li><Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About Us</Link></li>
-              <li><Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link></li>
             </ul>
           </div>
           
@@ -132,11 +119,10 @@ export function Footer() {
             © {new Date().getFullYear()} LinkBase. All rights reserved.
           </p>
           <div className="flex gap-4 mt-4 md:mt-0">
-            <span className="text-sm text-muted-foreground flex items-center gap-1">
-              <Zap className="h-3 w-3" /> Powered by Supabase
+            <span className="text-sm text-muted-foreground">
+              Made with ❤️ for developers
             </span>
             <Link to="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>

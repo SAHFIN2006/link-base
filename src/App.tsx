@@ -13,8 +13,6 @@ import Categories from "./pages/Categories";
 import CategoryDetails from "./pages/CategoryDetails";
 import MyLinks from "./pages/MyLinks";
 import NotFound from "./pages/NotFound";
-import Documentation from "./pages/Documentation";
-import About from "./pages/About";
 import Analytics from "./pages/Analytics";
 
 const queryClient = new QueryClient();
@@ -32,9 +30,8 @@ const App = () => (
               <Route path="/categories" element={<Categories />} />
               <Route path="/category/:categoryId" element={<CategoryDetails />} />
               <Route path="/my-links" element={<MyLinks />} />
-              <Route path="/documentation" element={<Documentation />} />
-              <Route path="/about" element={<About />} />
               <Route path="/analytics" element={<Analytics />} />
+              <Route path="/privacy" element={<NotFound />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

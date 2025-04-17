@@ -3,8 +3,7 @@ import { useState, useEffect } from 'react';
 import { Keyboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { getAllShortcuts } from '@/hooks/use-hotkeys';
-import { useHotkeys } from '@/hooks/use-hotkeys';
+import { getAllShortcuts, useHotkeys } from '@/hooks/use-hotkeys';
 
 export function KeyboardShortcutsButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,6 +11,14 @@ export function KeyboardShortcutsButton() {
   
   // Register '?' shortcut to open the shortcuts dialog
   useHotkeys('?', () => setIsOpen(true), "Show keyboard shortcuts");
+  
+  // Add search shortcut for global focus
+  useHotkeys('Ctrl+K', () => {
+    const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+    if (searchInput) {
+      searchInput.focus();
+    }
+  }, "Focus search");
   
   // Get all registered shortcuts
   useEffect(() => {
