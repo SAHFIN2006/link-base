@@ -85,7 +85,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
           path: filePath, 
           size: file.size, 
           type: file.type, 
-          categoryId: categoryId,
+          categoryId: categoryId, // Note the use of categoryId
           url: urlData.publicUrl
         });
         
