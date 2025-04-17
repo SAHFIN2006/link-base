@@ -109,9 +109,9 @@ export default function Analytics() {
 
   // Generate contributor data based on resources
   const contributorsData = useMemo(() => {
-    // Group resources by createdBy field
+    // Group resources by a default creator since createdBy doesn't exist in Resource type
     const contributors = resources.reduce((acc, resource) => {
-      const creator = resource.createdBy || 'anonymous';
+      const creator = 'anonymous'; // Default since createdBy doesn't exist
       if (!acc[creator]) {
         acc[creator] = {
           userId: creator,
@@ -179,8 +179,8 @@ export default function Analytics() {
       
       // Count resources by date
       resources.forEach(resource => {
-        if (resource.created_at) {
-          const createdDate = parseISO(resource.created_at);
+        if (resource.createdAt) {
+          const createdDate = parseISO(resource.createdAt);
           
           if (isValid(createdDate) && createdDate >= fromDate && createdDate <= toDate) {
             const dateStr = format(createdDate, 'yyyy-MM-dd');
@@ -194,8 +194,8 @@ export default function Analytics() {
           }
           
           // Count updates if available
-          if (resource.updated_at && resource.updated_at !== resource.created_at) {
-            const updatedDate = parseISO(resource.updated_at);
+          if (resource.updatedAt && resource.updatedAt !== resource.createdAt) {
+            const updatedDate = parseISO(resource.updatedAt);
             
             if (isValid(updatedDate) && updatedDate >= fromDate && updatedDate <= toDate) {
               const dateStr = format(updatedDate, 'yyyy-MM-dd');
