@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +38,6 @@ export function FileUpload({ categoryId }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Fetch files for the current category
   useEffect(() => {
     getFilesByCategory(categoryId);
   }, [categoryId, getFilesByCategory]);
@@ -62,7 +60,6 @@ export function FileUpload({ categoryId }: FileUploadProps) {
         const fileName = `${Math.random().toString(36).substring(2, 9)}_${file.name}`;
         const filePath = `${categoryId}/${fileName}`;
         
-        // Upload file to Supabase Storage
         const { error: uploadError, data } = await supabase.storage
           .from('file_uploads')
           .upload(filePath, file, {
@@ -74,22 +71,19 @@ export function FileUpload({ categoryId }: FileUploadProps) {
           throw uploadError;
         }
         
-        // Get public URL
         const { data: urlData } = supabase.storage
           .from('file_uploads')
           .getPublicUrl(filePath);
           
-        // Save file metadata
         await addFile({
           name: file.name, 
           path: filePath, 
           size: file.size, 
           type: file.type, 
-          categoryId: categoryId, // Ensure we use categoryId
+          categoryId: categoryId,
           url: urlData.publicUrl
         });
         
-        // Update progress
         setProgress(Math.round(((i + 1) / selectedFiles.length) * 100));
       }
       
@@ -107,7 +101,6 @@ export function FileUpload({ categoryId }: FileUploadProps) {
     } finally {
       setUploading(false);
       setProgress(0);
-      // Reset the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -116,12 +109,10 @@ export function FileUpload({ categoryId }: FileUploadProps) {
 
   const handleDelete = async (id: string, path: string) => {
     try {
-      // Delete from storage
       await supabase.storage
         .from('file_uploads')
         .remove([path]);
         
-      // Delete from database
       await deleteFile(id, path);
       
       toast({
@@ -138,13 +129,11 @@ export function FileUpload({ categoryId }: FileUploadProps) {
     }
   };
 
-  // Filter files based on search query
   const filteredFiles = files.filter(file => 
     file.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-    file.category_id === categoryId
+    file.categoryId === categoryId
   );
 
-  // Get file icon based on file type
   const getFileIcon = (fileType: string) => {
     if (fileType.includes('image')) return <ImageIcon className="h-8 w-8 text-blue-500" />;
     if (fileType.includes('pdf')) return <FileTextIcon className="h-8 w-8 text-red-500" />;
@@ -157,7 +146,6 @@ export function FileUpload({ categoryId }: FileUploadProps) {
     return <File className="h-8 w-8 text-gray-500" />;
   };
 
-  // Format file size for display
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
