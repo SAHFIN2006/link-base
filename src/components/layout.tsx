@@ -18,6 +18,8 @@ export function Layout({ children, title, description, image }: LayoutProps) {
   // Apply theme class to body
   useEffect(() => {
     document.body.className = theme;
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(theme);
   }, [theme]);
   
   return (

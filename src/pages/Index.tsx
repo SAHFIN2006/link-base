@@ -1,6 +1,8 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import * as Icons from "lucide-react";
 import { 
   ArrowRight, Plus, Folder, Search, Star, Filter,
   Monitor, Calendar, Zap, Lock, Cog, Briefcase, Brain, Code,
@@ -82,8 +84,8 @@ export default function Index() {
     }
     
     const category = categories.find(c => c.id === categoryId);
-    if (category && category.icon && typeof LucideIcons[category.icon as keyof typeof LucideIcons] === 'function') {
-      const IconComponent = LucideIcons[category.icon as keyof typeof LucideIcons];
+    if (category && category.icon && typeof Icons[category.icon as keyof typeof Icons] === 'function') {
+      const IconComponent = Icons[category.icon as keyof typeof Icons];
       return <IconComponent size={32} />;
     }
     
