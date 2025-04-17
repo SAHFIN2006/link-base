@@ -10,7 +10,9 @@ export function KeyboardShortcutsButton() {
   const [shortcuts, setShortcuts] = useState<Array<{ key: string, description: string }>>([]);
   
   // Register '?' shortcut to open the shortcuts dialog
-  useHotkeys('?', () => setIsOpen(true), "Show keyboard shortcuts");
+  useHotkeys('?', () => {
+    setIsOpen(true);
+  }, "Show keyboard shortcuts");
   
   // Add search shortcut for global focus
   useHotkeys('Ctrl+K', () => {
@@ -33,8 +35,12 @@ export function KeyboardShortcutsButton() {
         size="icon"
         onClick={() => setIsOpen(true)}
         title="Keyboard Shortcuts (Press ? to open)"
+        className="relative hover:bg-accent/50"
       >
         <Keyboard className="h-4 w-4" />
+        <kbd className="absolute -top-1 -right-1 text-[10px] font-medium bg-primary text-primary-foreground px-1 rounded-full">
+          ?
+        </kbd>
       </Button>
       
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

@@ -55,6 +55,15 @@ export function FileUpload({ categoryId }: FileUploadProps) {
     setProgress(0);
     
     try {
+      // Create the bucket if it doesn't exist (first time upload)
+      const { error: bucketError } = await supabase.storage.getBucket('file_uploads');
+      if (bucketError && bucketError.message.includes('does not exist')) {
+        await supabase.storage.createBucket('file_uploads', {
+          public: true,
+          fileSizeLimit: 50 * 1024 * 1024 // 50MB
+        });
+      }
+      
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
         const fileExt = file.name.split('.').pop();
@@ -69,6 +78,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
           });
           
         if (uploadError) {
+          console.error("Upload error:", uploadError);
           throw uploadError;
         }
         
@@ -96,7 +106,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
       console.error("Error uploading file:", error);
       toast({
         title: "Upload failed",
-        description: "There was an error uploading your file(s)",
+        description: "There was an error uploading your file(s). Please try again.",
         variant: "destructive"
       });
     } finally {

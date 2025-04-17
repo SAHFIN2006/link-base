@@ -43,60 +43,56 @@ export function useHotkeys(key: string, callback: () => void, description: strin
       delete globalShortcuts[key];
     };
   }, [key, description]);
+}
+
+// Key handler defined outside of hook to avoid recreating on each render
+const handleKeyDown = (event: KeyboardEvent) => {
+  // Skip if any modal is open (indicated by a dialog element)
+  const isModalOpen = document.querySelector('[role="dialog"]') !== null;
   
-  // Key handler (defined outside to prevent recreation on each render)
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    // Skip if any modal is open (indicated by a dialog element)
-    const isModalOpen = document.querySelector('[role="dialog"]') !== null;
-    
-    // Don't trigger shortcuts when typing in input elements
-    // except for explicitly allowed ones like "?" or "Shift+/"
-    if (
-      document.activeElement instanceof HTMLInputElement ||
-      document.activeElement instanceof HTMLTextAreaElement ||
-      document.activeElement instanceof HTMLSelectElement
-    ) {
-      // The only exceptions are global shortcuts like "?" or "Shift+/"
-      if (!(event.key === '?' || (event.key === '/' && event.shiftKey))) {
+  // Don't trigger shortcuts when typing in input elements
+  // except for explicitly allowed ones like "?" or "Shift+/"
+  if (
+    document.activeElement instanceof HTMLInputElement ||
+    document.activeElement instanceof HTMLTextAreaElement ||
+    document.activeElement instanceof HTMLSelectElement
+  ) {
+    // The only exceptions are global shortcuts like "?" or "Shift+/"
+    if (!(event.key === '?' || (event.key === '/' && event.shiftKey))) {
+      return;
+    }
+  }
+  
+  // Check for keyboard combinations
+  const isCtrl = event.ctrlKey;
+  const isShift = event.shiftKey;
+  const isAlt = event.altKey;
+  
+  // Convert the event to our shortcut format
+  let shortcutPressed = '';
+  if (isCtrl) shortcutPressed += 'Ctrl+';
+  if (isShift) shortcutPressed += 'Shift+';
+  if (isAlt) shortcutPressed += 'Alt+';
+  shortcutPressed += event.key;
+  
+  // Execute the callback if the shortcut is registered
+  Object.keys(globalShortcuts).forEach(shortcut => {
+    if (shortcut.toLowerCase() === shortcutPressed.toLowerCase()) {
+      event.preventDefault();
+      
+      // If we're in a modal, only allow the ? shortcut
+      if (isModalOpen && shortcut !== '?') {
         return;
       }
+      
+      globalShortcuts[shortcut].callback();
     }
-    
-    // Check for keyboard combinations
-    const isCtrl = event.ctrlKey;
-    const isShift = event.shiftKey;
-    const isAlt = event.altKey;
-    
-    // Convert the event to our shortcut format
-    let shortcutPressed = '';
-    if (isCtrl) shortcutPressed += 'Ctrl+';
-    if (isShift) shortcutPressed += 'Shift+';
-    if (isAlt) shortcutPressed += 'Alt+';
-    shortcutPressed += event.key;
-    
-    // Execute the callback if the shortcut is registered
-    Object.keys(globalShortcuts).forEach(shortcut => {
-      if (shortcut.toLowerCase() === shortcutPressed.toLowerCase()) {
-        event.preventDefault();
-        
-        // If we're in a modal, only allow the ? shortcut
-        if (isModalOpen && shortcut !== '?') {
-          return;
-        }
-        
-        globalShortcuts[shortcut].callback();
-      }
-    });
-  }, []);
-  
-  // Add and remove event listener
-  useEffect(() => {
-    // Using document-wide event listener ensures shortcuts work from any page
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [handleKeyDown]);
+  });
+};
+
+// Add a global event listener for all keyboard shortcuts
+if (typeof window !== 'undefined') {
+  document.addEventListener('keydown', handleKeyDown);
 }
 
 // Function to get all registered shortcuts

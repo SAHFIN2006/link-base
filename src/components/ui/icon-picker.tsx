@@ -18,12 +18,12 @@ const iconMap: Record<string, IconComponent> = {};
 Object.entries(Icons).forEach(([name, component]) => {
   // Skip utility functions and non-component exports
   if (
-    typeof component === 'function' && 
     name !== 'createLucideIcon' && 
     name !== 'icons' &&
     name !== 'default' &&
     name !== '__esModule' &&
-    name !== 'type'
+    name !== 'type' &&
+    typeof component === 'function'
   ) {
     iconMap[name] = component as IconComponent;
   }
@@ -37,12 +37,10 @@ interface IconPickerProps {
 export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [iconCategories, setIconCategories] = useState<any>({});
+  const [iconCategories, setIconCategories] = useState<Record<string, string[]>>({});
   
   // Default to Folder icon if the selected icon doesn't exist
-  const IconComponent = selectedIcon && iconMap[selectedIcon] 
-    ? iconMap[selectedIcon] 
-    : Icons.Folder;
+  const IconComponent = iconMap[selectedIcon] || Icons.Folder;
 
   // Most commonly used icons for categories to show first
   const popularIcons = [
@@ -73,7 +71,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
       };
       
       const categorizedIcons: Record<string, string[]> = {
-        "Popular": popularIcons
+        "Popular": [...popularIcons]
       };
       
       // Initialize all categories
@@ -147,7 +145,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
       </div>
       
       {isOpen && (
-        <div className="absolute z-50 w-[340px] mt-2 p-3 dark:bg-background/95 light:bg-background/95 backdrop-blur-xl border border-border rounded-lg shadow-lg max-h-96 overflow-hidden flex flex-col">
+        <div className="absolute z-50 w-[340px] mt-2 p-3 bg-background/95 backdrop-blur-xl border border-border rounded-lg shadow-lg max-h-96 overflow-hidden flex flex-col">
           <div className="mb-2 relative">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -163,7 +161,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
               <div key={category} className="mb-4">
                 <div className="mb-2 text-sm font-medium text-muted-foreground">{category}</div>
                 <div className="grid grid-cols-8 gap-1">
-                  {(icons as string[]).map((name) => {
+                  {icons.map((name) => {
                     const Icon = iconMap[name];
                     if (!Icon) return null;
                     return (
