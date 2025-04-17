@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -35,7 +34,11 @@ export default function Index() {
   const stats = getCategoryStats();
   
   useHotkeys("Shift+/", () => {
-    document.querySelector<HTMLInputElement>('input[placeholder="Search for resources..."]')?.focus();
+    const searchInput = document.querySelector<HTMLInputElement>('input[placeholder*="Search for resources"]');
+    if (searchInput) {
+      searchInput.focus();
+      searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   }, "Focus search");
   
   useHotkeys("Alt+c", () => {
@@ -84,9 +87,11 @@ export default function Index() {
     }
     
     const category = categories.find(c => c.id === categoryId);
-    if (category && category.icon && typeof Icons[category.icon as keyof typeof Icons] === 'function') {
-      const IconComponent = Icons[category.icon as keyof typeof Icons];
-      return <IconComponent size={32} />;
+    if (category && category.icon) {
+      const IconComponent = Icons[category.icon as keyof typeof Icons] as React.ComponentType<{ size?: number }>;
+      if (IconComponent) {
+        return <IconComponent size={32} />;
+      }
     }
     
     return <AlertCircle size={32} />;

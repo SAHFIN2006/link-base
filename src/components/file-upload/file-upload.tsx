@@ -1,0 +1,300 @@
+
+import { useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { 
+  FileIcon, 
+  Upload,
+  File, 
+  FileText, 
+  FileImage, 
+  FilePdf, 
+  FileArchive,
+  FileCode,
+  FileSpreadsheet,
+  FileVideo,
+  FileAudio,
+  MoreHorizontal,
+  Trash2
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Progress } from "@/components/ui/progress";
+
+interface FileUploadProps {
+  categoryId: string;
+}
+
+export function FileUpload({ categoryId }: FileUploadProps) {
+  const [files, setFiles] = useState<any[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFiles = Array.from(e.target.files);
+      handleUpload(selectedFiles);
+    }
+  };
+
+  const handleUpload = async (selectedFiles: File[]) => {
+    setUploading(true);
+    setProgress(0);
+    
+    try {
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 9)}_${file.name}`;
+        const filePath = `${categoryId}/${fileName}`;
+        
+        // Upload file to Supabase Storage
+        const { error: uploadError, data } = await supabase.storage
+          .from('resources')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+          
+        if (uploadError) {
+          throw uploadError;
+        }
+        
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('resources')
+          .getPublicUrl(filePath);
+          
+        // Save file metadata to database
+        const { error: metadataError } = await supabase
+          .from('files')
+          .insert([
+            { 
+              name: file.name, 
+              path: filePath, 
+              size: file.size, 
+              type: file.type, 
+              category_id: categoryId,
+              url: urlData.publicUrl
+            }
+          ]);
+          
+        if (metadataError) {
+          throw metadataError;
+        }
+        
+        // Update progress
+        setProgress(Math.round(((i + 1) / selectedFiles.length) * 100));
+      }
+      
+      // Fetch files after upload
+      fetchFiles();
+      
+      toast({
+        title: "Files uploaded successfully",
+        description: `Uploaded ${selectedFiles.length} file(s)`,
+      });
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast({
+        title: "Upload failed",
+        description: "There was an error uploading your file(s)",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+      setProgress(0);
+      // Reset the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const fetchFiles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('files')
+        .select('*')
+        .eq('category_id', categoryId)
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        throw error;
+      }
+      
+      setFiles(data || []);
+    } catch (error) {
+      console.error("Error fetching files:", error);
+      toast({
+        title: "Failed to load files",
+        description: "There was an error loading your files",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Initial fetch
+  useState(() => {
+    fetchFiles();
+  });
+
+  const handleDelete = async (id: string, path: string) => {
+    try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('resources')
+        .remove([path]);
+        
+      if (storageError) {
+        throw storageError;
+      }
+      
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('files')
+        .delete()
+        .eq('id', id);
+        
+      if (dbError) {
+        throw dbError;
+      }
+      
+      // Update local state
+      setFiles(files.filter(file => file.id !== id));
+      
+      toast({
+        title: "File deleted",
+        description: "The file has been deleted successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      toast({
+        title: "Delete failed",
+        description: "There was an error deleting the file",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Filter files based on search query
+  const filteredFiles = files.filter(file => 
+    file.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Get file icon based on file type
+  const getFileIcon = (fileType: string) => {
+    if (fileType.includes('image')) return <FileImage className="h-8 w-8 text-blue-500" />;
+    if (fileType.includes('pdf')) return <FilePdf className="h-8 w-8 text-red-500" />;
+    if (fileType.includes('zip') || fileType.includes('rar')) return <FileArchive className="h-8 w-8 text-yellow-500" />;
+    if (fileType.includes('text')) return <FileText className="h-8 w-8 text-gray-500" />;
+    if (fileType.includes('code') || fileType.includes('json') || fileType.includes('html')) return <FileCode className="h-8 w-8 text-green-500" />;
+    if (fileType.includes('sheet') || fileType.includes('excel') || fileType.includes('csv')) return <FileSpreadsheet className="h-8 w-8 text-green-500" />;
+    if (fileType.includes('video')) return <FileVideo className="h-8 w-8 text-purple-500" />;
+    if (fileType.includes('audio')) return <FileAudio className="h-8 w-8 text-pink-500" />;
+    return <File className="h-8 w-8 text-gray-500" />;
+  };
+
+  // Format file size for display
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+  };
+
+  return (
+    <div className="glass-card rounded-xl p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Files & Resources</h2>
+        <div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            multiple
+          />
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="gap-2"
+          >
+            <Upload size={16} />
+            Upload Files
+          </Button>
+        </div>
+      </div>
+      
+      {uploading && (
+        <div className="mb-6">
+          <p className="text-sm font-medium mb-2">Uploading: {progress}%</p>
+          <Progress value={progress} className="h-2" />
+        </div>
+      )}
+      
+      <div className="mb-6">
+        <Input
+          placeholder="Search files..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="max-w-md"
+        />
+      </div>
+      
+      <div className="space-y-4">
+        {filteredFiles.length > 0 ? (
+          filteredFiles.map(file => (
+            <div key={file.id} className="flex items-center p-3 border rounded-lg hover:bg-black/5 dark:hover:bg-white/5">
+              {getFileIcon(file.type)}
+              <div className="ml-4 flex-1 min-w-0">
+                <div className="flex justify-between items-start">
+                  <div className="truncate flex-1">
+                    <p className="font-medium truncate">{file.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatFileSize(file.size)} • {new Date(file.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center ml-4">
+                    <Button 
+                      asChild 
+                      variant="ghost" 
+                      size="sm"
+                      className="gap-1"
+                    >
+                      <a href={file.url} target="_blank" rel="noopener noreferrer">
+                        Open
+                      </a>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(file.id, file.path)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-12 border rounded-lg">
+            <FileIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground mb-2">No files found</p>
+            <Button 
+              variant="outline" 
+              onClick={() => fileInputRef.current?.click()}
+              className="mt-2"
+            >
+              Upload your first file
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -36,14 +36,19 @@ export function useHotkeys(key: string, callback: () => void, description: strin
   
   // Key handler
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // Skip if any modal is open (indicated by a dialog element)
+    const isModalOpen = document.querySelector('[role="dialog"]') !== null;
+    if (isModalOpen) return;
+    
     // Don't trigger shortcuts when typing in input elements
+    // except for explicitly allowed ones like "?" or "Shift+/"
     if (
       document.activeElement instanceof HTMLInputElement ||
       document.activeElement instanceof HTMLTextAreaElement ||
       document.activeElement instanceof HTMLSelectElement
     ) {
-      // The only exception is the global search shortcut
-      if (!(event.key === '/' && event.shiftKey)) {
+      // The only exceptions are global shortcuts like "?" or "Shift+/"
+      if (!(event.key === '?' || (event.key === '/' && event.shiftKey))) {
         return;
       }
     }
@@ -52,7 +57,6 @@ export function useHotkeys(key: string, callback: () => void, description: strin
     const isCtrl = event.ctrlKey;
     const isShift = event.shiftKey;
     const isAlt = event.altKey;
-    const key = event.key.toLowerCase();
     
     // Convert the event to our shortcut format
     let shortcutPressed = '';

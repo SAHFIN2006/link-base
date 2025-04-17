@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   ArrowLeft, Plus, Trash, Edit, Search, 
-  Brain, Briefcase, Calendar, Code, Cog, Folder, Lock, Monitor, Zap  
+  Brain, Briefcase, Calendar, Code, Cog, Folder, Lock, Monitor, Zap,
+  FileIcon, Terminal, Notebook
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,9 @@ import { useDatabase, Resource } from "@/context/database-context";
 import { AddResourceDialog, ResourceFormData } from "@/components/dialogs/add-resource-dialog";
 import { AddCategoryDialog } from "@/components/dialogs/add-category-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { NoteEditor } from "@/components/notes/note-editor";
+import { FileUpload } from "@/components/file-upload/file-upload";
 
 export default function CategoryDetails() {
   const { categoryId } = useParams<{ categoryId: string }>();
@@ -38,8 +41,8 @@ export default function CategoryDetails() {
   const [isEditCategoryDialogOpen, setIsEditCategoryDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [resourceToEdit, setResourceToEdit] = useState<ResourceFormData | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState("resources");
   
-  // Fetch category and resources
   useEffect(() => {
     if (categoryId) {
       const categoryData = getCategory(categoryId);
@@ -53,14 +56,12 @@ export default function CategoryDetails() {
     }
   }, [categoryId, getCategory, getResourcesByCategory, resources, navigate]);
   
-  // Filter resources based on search query
   const filteredResources = categoryResources.filter(resource => 
     resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     resource.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
     resource.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
   );
   
-  // Get category icon
   const getCategoryIcon = (categoryId: string) => {
     switch(categoryId) {
       case "tech-stock": return <Monitor size={32} />;
@@ -75,7 +76,6 @@ export default function CategoryDetails() {
     }
   };
   
-  // Handle add/edit resource
   const handleSaveResource = (data: ResourceFormData) => {
     if (data.id) {
       updateResource(data.id, data);
@@ -86,7 +86,6 @@ export default function CategoryDetails() {
     setResourceToEdit(undefined);
   };
   
-  // Handle resource edit
   const handleEditResource = (id: string) => {
     const resource = categoryResources.find(r => r.id === id);
     if (resource) {
@@ -102,7 +101,6 @@ export default function CategoryDetails() {
     }
   };
   
-  // Handle category edit
   const handleUpdateCategory = (data: any) => {
     if (category) {
       updateCategory(category.id, data);
@@ -111,7 +109,6 @@ export default function CategoryDetails() {
     setIsEditCategoryDialogOpen(false);
   };
   
-  // Handle category delete
   const handleDeleteCategory = () => {
     if (category) {
       deleteCategory(category.id);
@@ -132,7 +129,6 @@ export default function CategoryDetails() {
   return (
     <Layout>
       <div className="container px-4 mx-auto py-12">
-        {/* Header with Back Button */}
         <div className="mb-8">
           <Button 
             variant="ghost"
@@ -180,78 +176,101 @@ export default function CategoryDetails() {
           </div>
         </div>
         
-        {/* Resources Section */}
-        <div className="mb-10">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
-            <h2 className="text-2xl font-bold">Resources ({categoryResources.length})</h2>
-            <Button 
-              onClick={() => {
-                setResourceToEdit(undefined);
-                setIsAddResourceDialogOpen(true);
-              }}
-              className="gap-2 md:self-start"
-            >
-              <Plus size={18} />
-              Add Resource
-            </Button>
-          </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+          <TabsList className="mb-6">
+            <TabsTrigger value="resources" className="gap-2">
+              <Terminal size={16} />
+              Resources
+            </TabsTrigger>
+            <TabsTrigger value="notes" className="gap-2">
+              <Notebook size={16} />
+              Notes
+            </TabsTrigger>
+            <TabsTrigger value="files" className="gap-2">
+              <FileIcon size={16} />
+              Files
+            </TabsTrigger>
+          </TabsList>
           
-          {/* Search */}
-          <div className="relative mb-8">
-            <Search className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
-            <Input 
-              type="text" 
-              placeholder="Search resources..." 
-              className="pl-11 bg-black/40 border-white/10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          
-          {/* Resources Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredResources.map((resource, index) => (
-              <ResourceCard
-                key={resource.id}
-                id={resource.id}
-                title={resource.title}
-                url={resource.url}
-                description={resource.description}
-                tags={resource.tags}
-                favorite={resource.favorite}
-                delay={index}
-                onEdit={handleEditResource}
-                onDelete={deleteResource}
-                onFavorite={toggleFavorite}
-              />
-            ))}
-          </div>
-          
-          {filteredResources.length === 0 && (
-            <div className="text-center py-16">
-              <Folder className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-2xl font-semibold mb-2">No resources found</h3>
-              <p className="text-muted-foreground mb-6">
-                {searchQuery 
-                  ? `No resources matching "${searchQuery}"`
-                  : "Start by adding your first resource to this category"}
-              </p>
-              <Button 
-                onClick={() => {
-                  setResourceToEdit(undefined);
-                  setIsAddResourceDialogOpen(true);
-                }}
-                className="gap-2"
-              >
-                <Plus size={18} />
-                Add New Resource
-              </Button>
+          <TabsContent value="resources">
+            <div className="mb-10">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+                <h2 className="text-2xl font-bold">Resources ({categoryResources.length})</h2>
+                <Button 
+                  onClick={() => {
+                    setResourceToEdit(undefined);
+                    setIsAddResourceDialogOpen(true);
+                  }}
+                  className="gap-2 md:self-start"
+                >
+                  <Plus size={18} />
+                  Add Resource
+                </Button>
+              </div>
+              
+              <div className="relative mb-8">
+                <Search className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
+                <Input 
+                  type="text" 
+                  placeholder="Search resources..." 
+                  className="pl-11 bg-black/40 border-white/10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredResources.map((resource, index) => (
+                  <ResourceCard
+                    key={resource.id}
+                    id={resource.id}
+                    title={resource.title}
+                    url={resource.url}
+                    description={resource.description}
+                    tags={resource.tags}
+                    favorite={resource.favorite}
+                    delay={index}
+                    onEdit={handleEditResource}
+                    onDelete={deleteResource}
+                    onFavorite={toggleFavorite}
+                  />
+                ))}
+              </div>
+              
+              {filteredResources.length === 0 && (
+                <div className="text-center py-16">
+                  <Folder className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+                  <h3 className="text-2xl font-semibold mb-2">No resources found</h3>
+                  <p className="text-muted-foreground mb-6">
+                    {searchQuery 
+                      ? `No resources matching "${searchQuery}"`
+                      : "Start by adding your first resource to this category"}
+                  </p>
+                  <Button 
+                    onClick={() => {
+                      setResourceToEdit(undefined);
+                      setIsAddResourceDialogOpen(true);
+                    }}
+                    className="gap-2"
+                  >
+                    <Plus size={18} />
+                    Add New Resource
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </TabsContent>
+          
+          <TabsContent value="notes">
+            {categoryId && <NoteEditor categoryId={categoryId} />}
+          </TabsContent>
+          
+          <TabsContent value="files">
+            {categoryId && <FileUpload categoryId={categoryId} />}
+          </TabsContent>
+        </Tabs>
       </div>
       
-      {/* Resource Dialog */}
       <AddResourceDialog
         categories={categories}
         initialData={resourceToEdit}
@@ -263,7 +282,6 @@ export default function CategoryDetails() {
         onSave={handleSaveResource}
       />
       
-      {/* Edit Category Dialog */}
       {category && (
         <AddCategoryDialog
           initialData={{
@@ -278,7 +296,6 @@ export default function CategoryDetails() {
         />
       )}
       
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px] glass-panel border-white/10">
           <DialogHeader>

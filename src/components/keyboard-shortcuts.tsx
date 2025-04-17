@@ -38,14 +38,20 @@ export function KeyboardShortcutsButton() {
           
           <div className="py-4">
             <div className="space-y-4">
-              {shortcuts.map((shortcut, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <span className="text-sm">{shortcut.description}</span>
-                  <kbd className="px-2.5 py-1.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700">
-                    {shortcut.key}
-                  </kbd>
+              {shortcuts.length > 0 ? (
+                shortcuts.map((shortcut, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <span className="text-sm">{shortcut.description}</span>
+                    <kbd className="px-2.5 py-1.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700">
+                      {shortcut.key}
+                    </kbd>
+                  </div>
+                ))
+              ) : (
+                <div className="text-sm text-muted-foreground text-center">
+                  No keyboard shortcuts registered
                 </div>
-              ))}
+              )}
             </div>
             
             <div className="mt-6 text-xs text-muted-foreground text-center">

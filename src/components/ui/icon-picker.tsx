@@ -4,11 +4,13 @@ import * as LucideIcons from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-// Create a proper type for our icon map
-type LucideIcon = React.ComponentType<React.SVGProps<SVGSVGElement> & { size?: number | string }>;
+// Create a type for our icon components
+type IconComponent = React.ForwardRefExoticComponent<React.PropsWithoutRef<React.SVGProps<SVGSVGElement> & {
+  size?: number | string;
+}> & React.RefAttributes<SVGSVGElement>>;
 
 // Filter out the non-icon exports and construct a clean icon map
-const iconMap: Record<string, LucideIcon> = {};
+const iconMap: Record<string, IconComponent> = {};
 
 // Add only the actual icon components to our map
 Object.entries(LucideIcons).forEach(([name, component]) => {
@@ -21,7 +23,7 @@ Object.entries(LucideIcons).forEach(([name, component]) => {
     name !== '__esModule' &&
     name !== 'type'
   ) {
-    iconMap[name] = component as LucideIcon;
+    iconMap[name] = component as IconComponent;
   }
 });
 
@@ -34,20 +36,9 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   
   // Default to Folder icon if the selected icon doesn't exist
-  let IconComponent: LucideIcon = LucideIcons.Folder;
-  
-  // Try to get the icon by name
-  if (selectedIcon && iconMap[selectedIcon]) {
-    IconComponent = iconMap[selectedIcon];
-  } else if (selectedIcon) {
-    // Try to match case-insensitively
-    const key = Object.keys(iconMap).find(
-      k => k.toLowerCase() === selectedIcon.toLowerCase()
-    );
-    if (key) {
-      IconComponent = iconMap[key];
-    }
-  }
+  const IconComponent = selectedIcon && iconMap[selectedIcon] 
+    ? iconMap[selectedIcon] 
+    : LucideIcons.Folder;
 
   // Most commonly used icons for categories to show first
   const popularIcons = [
