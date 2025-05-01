@@ -41,7 +41,7 @@ export function DecryptedText({
       const totalIterations = 10; // How many random iterations before settling
       
       const interval = setInterval(() => {
-        setDisplayedText(current => {
+        setDisplayedText(() => {
           const result = finalText.split("").map((char, idx) => {
             // If we've already "decrypted" this character, return it
             if (idx < iteration / totalIterations * finalText.length) {
@@ -69,7 +69,7 @@ export function DecryptedText({
     }, delay * 1000);
     
     return () => clearTimeout(timer);
-  }, [children, delay, duration]);
+  }, [children, delay, duration, chars]);
 
   // Safe stringify of children for initial state
   const safeChildren = typeof children === 'string' ? children : 
@@ -80,7 +80,7 @@ export function DecryptedText({
                      String(children);
 
   return (
-    <Tag className={cn("inline-block font-mono", className)}>
+    <Tag className={cn("font-mono", className)}>
       {displayedText || safeChildren.replace(/./g, "_")}
     </Tag>
   );

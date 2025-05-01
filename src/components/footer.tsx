@@ -1,6 +1,5 @@
 
 import { Link } from "react-router-dom";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ShinyText } from "@/components/animations";
 import { 
   Github, 
@@ -91,9 +90,6 @@ export function Footer() {
                 <Twitter size={20} />
                 <span className="sr-only">Twitter</span>
               </a>
-            </div>
-            <div className="mt-4">
-              <ThemeToggle />
             </div>
           </div>
         </div>

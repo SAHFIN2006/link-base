@@ -94,7 +94,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
         if (uploadError) {
           console.error("Upload error:", uploadError);
           toast({
-            title: `Error uploading ${file.name}`,
+            title: "Error uploading file",
             description: uploadError.message,
             variant: "destructive"
           });
@@ -152,7 +152,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
       
       toast({
         title: "File deleted",
-        description: "The file has been deleted successfully",
+        description: "The file has been deleted successfully"
       });
       
       // Refresh the file list after deletion
@@ -161,8 +161,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
       console.error("Error deleting file:", error);
       toast({
         title: "Delete failed",
-        description: "There was an error deleting the file",
-        variant: "destructive"
+        description: "There was an error deleting the file"
       });
     }
   };
