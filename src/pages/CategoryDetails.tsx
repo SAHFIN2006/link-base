@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoteEditor } from "@/components/notes/note-editor";
 import { FileUpload } from "@/components/file-upload/file-upload";
-import { SplitText, ShinyText, BlurText, DecryptedText } from "@/components/animations";
+import { SplitText, ShinyText, BlurText } from "@/components/animations";
 
 export default function CategoryDetails() {
   const { categoryId } = useParams<{ categoryId: string }>();
@@ -202,7 +202,7 @@ export default function CategoryDetails() {
             <div className="mb-10">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
                 <h2 className="text-2xl font-bold">
-                  <DecryptedText>Resources ({categoryResources.length})</DecryptedText>
+                  Resources ({categoryResources.length})
                 </h2>
                 <Button 
                   onClick={() => {

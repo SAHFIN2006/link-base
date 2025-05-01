@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface DecryptedTextProps {
-  children: string;
+  children: React.ReactNode;
   className?: string;
   duration?: number;
   delay?: number;
@@ -30,7 +30,13 @@ export function DecryptedText({
     timer = setTimeout(() => {
       setIsDecrypting(true);
       
-      const finalText = children;
+      const finalText = typeof children === 'string' ? children : 
+                         React.isValidElement(children) ? 
+                         React.Children.toArray(children).map(child => 
+                           typeof child === 'string' ? child : ''
+                         ).join('') : 
+                         String(children);
+                         
       let iteration = 0;
       const totalIterations = 10; // How many random iterations before settling
       
@@ -65,9 +71,17 @@ export function DecryptedText({
     return () => clearTimeout(timer);
   }, [children, delay, duration]);
 
+  // Safe stringify of children for initial state
+  const safeChildren = typeof children === 'string' ? children : 
+                     React.isValidElement(children) ? 
+                     React.Children.toArray(children).map(child => 
+                       typeof child === 'string' ? child : ''
+                     ).join('') : 
+                     String(children);
+
   return (
     <Tag className={cn("inline-block font-mono", className)}>
-      {displayedText || children.replace(/./g, "_")}
+      {displayedText || safeChildren.replace(/./g, "_")}
     </Tag>
   );
 }

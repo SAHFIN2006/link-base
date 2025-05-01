@@ -16,7 +16,7 @@ import {
   Music,
   Trash2
 } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { useDatabase } from "@/context/database-context";
@@ -123,6 +123,9 @@ export function FileUpload({ categoryId }: FileUploadProps) {
         title: "Files uploaded successfully",
         description: `Uploaded ${selectedFiles.length} file(s)`,
       });
+
+      // Refresh the file list after upload
+      getFilesByCategory(categoryId);
     } catch (error) {
       console.error("Error uploading file:", error);
       toast({
@@ -151,6 +154,9 @@ export function FileUpload({ categoryId }: FileUploadProps) {
         title: "File deleted",
         description: "The file has been deleted successfully",
       });
+      
+      // Refresh the file list after deletion
+      getFilesByCategory(categoryId);
     } catch (error) {
       console.error("Error deleting file:", error);
       toast({

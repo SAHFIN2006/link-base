@@ -4,7 +4,8 @@ import * as LucideIcons from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, Folder } from "lucide-react";
+import { toast } from "sonner";
 
 // Create a type for our icon components
 type IconComponent = React.ForwardRefExoticComponent<React.PropsWithoutRef<React.SVGProps<SVGSVGElement> & {
@@ -37,6 +38,8 @@ interface IconPickerProps {
 export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [customIconUrl, setCustomIconUrl] = useState("");
+  const [customIcons, setCustomIcons] = useState<{[key: string]: string}>({});
   
   // Default to Folder icon if the selected icon doesn't exist
   const IconComponent = iconMap[selectedIcon] || LucideIcons.Folder;
@@ -50,6 +53,18 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
     "Book", "FileText", "Globe", "Home",
     "Link", "HeartHandshake", "Users", "Smile"
   ];
+
+  // Load custom icons from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedIcons = localStorage.getItem('customIcons');
+      if (savedIcons) {
+        setCustomIcons(JSON.parse(savedIcons));
+      }
+    } catch (error) {
+      console.error("Error loading custom icons:", error);
+    }
+  }, []);
 
   // Filter icons based on search term
   const filteredIcons = useMemo(() => {
@@ -83,6 +98,35 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
     };
   }, [isOpen]);
 
+  // Function to add a custom icon
+  const handleAddCustomIcon = () => {
+    if (!customIconUrl.trim()) {
+      toast.error("Please enter a valid icon URL");
+      return;
+    }
+
+    // Generate a unique name for the custom icon
+    const iconName = `CustomIcon_${Object.keys(customIcons).length + 1}`;
+    
+    // Add the new custom icon
+    const newCustomIcons = {
+      ...customIcons,
+      [iconName]: customIconUrl
+    };
+    
+    setCustomIcons(newCustomIcons);
+    
+    // Save to localStorage
+    try {
+      localStorage.setItem('customIcons', JSON.stringify(newCustomIcons));
+      toast.success("Custom icon added successfully!");
+      setCustomIconUrl("");
+    } catch (error) {
+      console.error("Error saving custom icons:", error);
+      toast.error("Failed to save custom icon");
+    }
+  };
+
   return (
     <div className="relative" data-icon-picker="true">
       <div className="flex gap-2 items-center">
@@ -112,31 +156,86 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
             />
           </div>
           
-          <div className="overflow-y-auto flex-1 grid grid-cols-8 gap-1">
-            {filteredIcons.map((name) => {
-              const Icon = iconMap[name];
-              if (!Icon) return null;
-              return (
-                <Button
-                  key={name}
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "w-9 h-9",
-                    selectedIcon === name && "bg-primary/20 text-primary"
-                  )}
-                  onClick={() => {
-                    onSelectIcon(name);
-                    setIsOpen(false);
-                  }}
-                  title={name}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="sr-only">{name}</span>
-                </Button>
-              );
-            })}
+          {/* Custom icon input */}
+          <div className="flex gap-2 mb-3">
+            <Input
+              value={customIconUrl}
+              onChange={(e) => setCustomIconUrl(e.target.value)}
+              placeholder="Enter custom icon URL..."
+              className="flex-1"
+            />
+            <Button 
+              type="button" 
+              variant="secondary" 
+              size="sm" 
+              onClick={handleAddCustomIcon}
+            >
+              Add
+            </Button>
+          </div>
+          
+          <div className="overflow-y-auto flex-1">
+            {/* Custom icons section */}
+            {Object.keys(customIcons).length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-xs font-medium text-muted-foreground mb-2 px-1">Custom Icons</h4>
+                <div className="grid grid-cols-8 gap-1">
+                  {Object.entries(customIcons).map(([name, url]) => (
+                    <Button
+                      key={name}
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "w-9 h-9",
+                        selectedIcon === name && "bg-primary/20 text-primary"
+                      )}
+                      onClick={() => {
+                        onSelectIcon(name);
+                        setIsOpen(false);
+                      }}
+                      title={name}
+                    >
+                      <div className="w-5 h-5 flex items-center justify-center">
+                        <img src={url} alt={name} className="max-w-full max-h-full" />
+                      </div>
+                      <span className="sr-only">{name}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Lucide icons section */}
+            <div>
+              <h4 className="text-xs font-medium text-muted-foreground mb-2 px-1">Lucide Icons</h4>
+              <div className="grid grid-cols-8 gap-1">
+                {filteredIcons.map((name) => {
+                  const Icon = iconMap[name];
+                  if (!Icon) return null;
+                  return (
+                    <Button
+                      key={name}
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "w-9 h-9",
+                        selectedIcon === name && "bg-primary/20 text-primary"
+                      )}
+                      onClick={() => {
+                        onSelectIcon(name);
+                        setIsOpen(false);
+                      }}
+                      title={name}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="sr-only">{name}</span>
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
