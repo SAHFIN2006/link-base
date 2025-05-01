@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import * as LucideIcons from "lucide-react";
@@ -17,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SplitText, ShinyText } from "@/components/animations";
 
 type SortOption = "az" | "za" | "newest" | "oldest";
 
@@ -89,10 +89,13 @@ export default function Categories() {
   return (
     <Layout>
       <div className="container px-4 mx-auto py-12">
-        {/* Header */}
+        {/* Header with animations */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
           <div>
-            <h1 className="text-4xl font-bold mb-2">Explore Categories</h1>
+            <h1 className="text-4xl font-bold mb-2">
+              <SplitText highlightClassName="text-linkblue">Explore </SplitText>
+              <ShinyText>Categories</ShinyText>
+            </h1>
             <p className="text-muted-foreground">
               Browse all categories or create your own custom categories
             </p>
@@ -152,8 +155,8 @@ export default function Categories() {
           </div>
         </div>
         
-        {/* Categories Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {/* Categories Grid - Modified for 3x3 grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {filteredCategories.map((category, index) => (
             <motion.div
               key={category.id}

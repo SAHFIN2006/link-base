@@ -179,6 +179,17 @@ export default {
 					'100%': {
 						transform: 'translateX(0)'
 					}
+				},
+				// New animation keyframes for text animations
+				'shimmer': {
+					'0%': { backgroundPosition: '200% 0' },
+					'100%': { backgroundPosition: '0 0' }
+				},
+				'rotate-text': {
+					'0%, 20%': { transform: 'translateY(0)' },
+					'30%, 50%': { transform: 'translateY(-100%)' },
+					'60%, 80%': { transform: 'translateY(-200%)' },
+					'90%, 100%': { transform: 'translateY(-300%)' }
 				}
 			},
 			animation: {
@@ -193,6 +204,8 @@ export default {
 				'float': 'float 6s ease-in-out infinite',
 				'slide-left': 'slide-left 0.5s ease-out',
 				'slide-right': 'slide-right 0.5s ease-out',
+				// New animations
+				'shimmer': 'shimmer 3s infinite',
 			}
 		}
 	},
