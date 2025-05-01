@@ -55,8 +55,9 @@ export function FileUpload({ categoryId }: FileUploadProps) {
     
     try {
       // Create the bucket if it doesn't exist (first time upload)
-      const { error: bucketError } = await supabase.storage.getBucket('file_uploads');
-      if (bucketError && bucketError.message.includes('does not exist')) {
+      const { data: bucketData } = await supabase.storage.getBucket('file_uploads');
+      
+      if (!bucketData) {
         await supabase.storage.createBucket('file_uploads', {
           public: true,
           fileSizeLimit: 50 * 1024 * 1024 // 50MB
@@ -64,19 +65,24 @@ export function FileUpload({ categoryId }: FileUploadProps) {
       }
 
       // Set up public access for the bucket
-      const { error: policyError } = await supabase.storage.from('file_uploads').getPublicUrl('test-policy');
-      if (policyError) {
+      const { data: policyData } = await supabase.storage.from('file_uploads').getPublicUrl('test-policy');
+      
+      if (!policyData) {
         // Add policy to allow public access
-        await supabase.rpc('create_or_update_storage_policy', { 
-          bucket_name: 'file_uploads', 
-          policy_name: 'public_access',
-          policy_definition: {
-            bucket_id: 'file_uploads',
-            role: 'anon',
-            operation: '*',
-            permission: 'TRUE'
-          }
-        }).catch(e => console.error("Policy creation error:", e));
+        try {
+          await supabase.rpc('create_or_update_storage_policy', { 
+            bucket_name: 'file_uploads', 
+            policy_name: 'public_access',
+            policy_definition: {
+              bucket_id: 'file_uploads',
+              role: 'anon',
+              operation: '*',
+              permission: 'TRUE'
+            }
+          });
+        } catch (e) {
+          console.error("Policy creation error:", e);
+        }
       }
       
       for (let i = 0; i < selectedFiles.length; i++) {

@@ -1,7 +1,17 @@
 
 import { Link } from "react-router-dom";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { FolderKanban, Settings, Info, HeartHandshake, GitHub, Twitter, Home } from "lucide-react";
+import { 
+  FolderKanban, 
+  Settings, 
+  Info, 
+  HeartHandshake, 
+  Github, 
+  Twitter, 
+  Home, 
+  FileText,
+  BarChart
+} from "lucide-react";
 
 export function Footer() {
   return (
@@ -20,6 +30,10 @@ export function Footer() {
             <HeartHandshake size={16} />
             My Links
           </Link>
+          <Link to="/analytics" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <BarChart size={16} />
+            Analytics
+          </Link>
         </div>
         <div className="flex gap-4 items-center">
           <div className="flex items-center gap-4">
@@ -29,7 +43,7 @@ export function Footer() {
               rel="noopener noreferrer" 
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
-              <GitHub size={18} />
+              <Github size={18} />
               <span className="sr-only">GitHub</span>
             </a>
             <a 
