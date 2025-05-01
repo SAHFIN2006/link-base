@@ -1,1 +1,10 @@
+
 project_id = "nqgfnasvqzfkvqzbcguc"
+[storage]
+file_size_limit = "50MB"
+
+[[storage.buckets]]
+name = "file_uploads"
+public = true
+file_size_limit = "50MB"
+allowed_mime_types = ["image/*", "video/*", "audio/*", "application/*", "text/*"]

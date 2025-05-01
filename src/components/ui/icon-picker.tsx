@@ -49,7 +49,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
     "BarChart", "Layers", "Monitor", "Zap", 
     "Lock", "Briefcase", "Calendar", "Cog",
     "Book", "FileText", "Globe", "Home",
-    "Link", "Workflow", "Users", "Smile"
+    "Link", "HeartHandshake", "Users", "Smile"
   ];
 
   // Filter and categorize icons based on search term
@@ -128,8 +128,24 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
     setIconCategories(categorizeIcons());
   }, [searchTerm]);
 
+  // Create a document click handler to close the dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (isOpen && !target.closest('[data-icon-picker="true"]')) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isOpen]);
+
   return (
-    <div className="relative">
+    <div className="relative" data-icon-picker="true">
       <div className="flex gap-2 items-center">
         <Button 
           type="button"
@@ -153,6 +169,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search icons..."
               className="pl-8"
+              autoFocus
             />
           </div>
           

@@ -28,7 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { 
   Activity, Users, BarChart3, PieChart as PieChartIcon, 
-  Calendar as CalendarIcon, ChevronDown
+  Calendar as CalendarIcon, ChevronDown, RefreshCw
 } from "lucide-react";
 import {
   Card,
@@ -45,6 +45,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useHotkeys } from "@/hooks/use-hotkeys";
+import { toast } from "@/hooks/use-toast";
 
 interface ActivityData {
   date: string;
@@ -64,6 +65,8 @@ export default function Analytics() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState<number>(30); // seconds
   const [isAutoRefresh, setIsAutoRefresh] = useState(false);
+  const [refreshIntervalId, setRefreshIntervalId] = useState<number | null>(null);
+  const [lastRefreshedTime, setLastRefreshedTime] = useState<Date>(new Date());
 
   // Register keyboard shortcuts for this page
   useHotkeys('r', fetchAnalyticsData, "Refresh analytics data");
@@ -72,9 +75,36 @@ export default function Analytics() {
       from: subDays(new Date(), 30),
       to: new Date(),
     });
+    toast({
+      title: "Date range reset",
+      description: "Showing data for the last 30 days"
+    });
   }, "Reset date range to last 30 days");
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#a77BFF', '#FF6B6B', '#4D4DFF', '#19A7CE'];
+
+  // Handle auto-refresh toggle
+  useEffect(() => {
+    // Clear existing interval if any
+    if (refreshIntervalId !== null) {
+      window.clearInterval(refreshIntervalId);
+      setRefreshIntervalId(null);
+    }
+    
+    if (isAutoRefresh && refreshInterval > 0) {
+      const id = window.setInterval(() => {
+        fetchAnalyticsData();
+        setLastRefreshedTime(new Date());
+      }, refreshInterval * 1000);
+      setRefreshIntervalId(Number(id));
+    }
+    
+    return () => {
+      if (refreshIntervalId !== null) {
+        window.clearInterval(refreshIntervalId);
+      }
+    };
+  }, [isAutoRefresh, refreshInterval]);
 
   // Set up real-time listeners and initial data fetch
   useEffect(() => {
@@ -92,41 +122,17 @@ export default function Analytics() {
     };
   }, [dateRange]);
 
-  // Auto-refresh on interval
-  useEffect(() => {
-    let intervalId: number;
-    
-    if (isAutoRefresh && refreshInterval > 0) {
-      intervalId = window.setInterval(() => {
-        fetchAnalyticsData();
-      }, refreshInterval * 1000);
-    }
-    
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [isAutoRefresh, refreshInterval]);
-
   // Generate contributor data based on resources
   const contributorsData = useMemo(() => {
-    // Group resources by a default creator since createdBy doesn't exist in Resource type
-    const contributors = resources.reduce((acc, resource) => {
-      const creator = 'anonymous'; // Default since createdBy doesn't exist
-      if (!acc[creator]) {
-        acc[creator] = {
-          userId: creator,
-          userName: creator === 'anonymous' ? 'Anonymous' : creator,
-          resourcesAdded: 0,
-          resourcesUpdated: 0
-        };
-      }
-      acc[creator].resourcesAdded += 1;
-      return acc;
-    }, {} as Record<string, any>);
+    // Since we don't have createdBy field, we'll use anonymous for all resources
+    const contributor = {
+      userId: 'anonymous',
+      userName: 'Anonymous',
+      resourcesAdded: resources.length,
+      resourcesUpdated: 0
+    };
     
-    return Object.values(contributors)
-      .sort((a, b) => b.resourcesAdded - a.resourcesAdded)
-      .slice(0, 10);
+    return [contributor];
   }, [resources]);
 
   // Generate category distribution data
@@ -234,8 +240,18 @@ export default function Analytics() {
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
       setActivityData(sortedActivityData);
+      
+      // Show a toast notification if manually refreshed
+      if (!isAutoRefresh) {
+        setLastRefreshedTime(new Date());
+      }
     } catch (error) {
       console.error("Error processing analytics data:", error);
+      toast({
+        title: "Failed to load analytics data",
+        description: "There was an error processing the analytics data",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -269,6 +285,11 @@ export default function Analytics() {
   const hasData = useMemo(() => {
     return resources.length > 0 || files.length > 0 || categories.length > 0;
   }, [resources, files, categories]);
+
+  // Last refreshed time formatter
+  const formatLastRefreshedTime = () => {
+    return format(lastRefreshedTime, "HH:mm:ss");
+  };
 
   return (
     <Layout>
@@ -343,10 +364,17 @@ export default function Analytics() {
                 variant="outline" 
                 onClick={fetchAnalyticsData}
                 disabled={isLoading}
+                className="gap-2"
               >
-                Refresh Data
+                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                Refresh
               </Button>
             </div>
+          </div>
+          
+          {/* Last refreshed time display */}
+          <div className="text-sm text-muted-foreground">
+            Last refreshed: {formatLastRefreshedTime()}
           </div>
           
           {/* Key Metrics */}

@@ -17,7 +17,7 @@ import {
   MoreHorizontal,
   Trash2
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { useDatabase } from "@/context/database-context";
@@ -37,7 +37,6 @@ export function FileUpload({ categoryId }: FileUploadProps) {
   const [progress, setProgress] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     getFilesByCategory(categoryId);
@@ -63,6 +62,22 @@ export function FileUpload({ categoryId }: FileUploadProps) {
           fileSizeLimit: 50 * 1024 * 1024 // 50MB
         });
       }
+
+      // Set up public access for the bucket
+      const { error: policyError } = await supabase.storage.from('file_uploads').getPublicUrl('test-policy');
+      if (policyError) {
+        // Add policy to allow public access
+        await supabase.rpc('create_or_update_storage_policy', { 
+          bucket_name: 'file_uploads', 
+          policy_name: 'public_access',
+          policy_definition: {
+            bucket_id: 'file_uploads',
+            role: 'anon',
+            operation: '*',
+            permission: 'TRUE'
+          }
+        }).catch(e => console.error("Policy creation error:", e));
+      }
       
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
@@ -79,7 +94,12 @@ export function FileUpload({ categoryId }: FileUploadProps) {
           
         if (uploadError) {
           console.error("Upload error:", uploadError);
-          throw uploadError;
+          toast({
+            title: `Error uploading ${file.name}`,
+            description: uploadError.message,
+            variant: "destructive"
+          });
+          continue;
         }
         
         const { data: urlData } = supabase.storage

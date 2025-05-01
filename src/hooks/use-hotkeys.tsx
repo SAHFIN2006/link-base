@@ -14,8 +14,12 @@ interface ShortcutsMap {
   }
 }
 
-// Global shortcuts registry
-const globalShortcuts: ShortcutsMap = {};
+// Global shortcuts registry - use window to ensure it's globally available
+if (typeof window !== 'undefined') {
+  if (!window.globalShortcuts) {
+    window.globalShortcuts = {};
+  }
+}
 
 /**
  * Custom hook for registering keyboard shortcuts
@@ -32,21 +36,25 @@ export function useHotkeys(key: string, callback: () => void, description: strin
     callbackRef.current = callback;
   }, [callback]);
   
-  // Register shortcut
+  // Register shortcut in the global registry
   useEffect(() => {
-    globalShortcuts[key] = { 
-      callback: () => callbackRef.current(), 
-      description 
-    };
-    
-    return () => {
-      delete globalShortcuts[key];
-    };
+    if (typeof window !== 'undefined') {
+      window.globalShortcuts[key] = { 
+        callback: () => callbackRef.current(), 
+        description 
+      };
+      
+      return () => {
+        delete window.globalShortcuts[key];
+      };
+    }
   }, [key, description]);
 }
 
 // Key handler defined outside of hook to avoid recreating on each render
 const handleKeyDown = (event: KeyboardEvent) => {
+  if (typeof window === 'undefined') return;
+  
   // Skip if any modal is open (indicated by a dialog element)
   const isModalOpen = document.querySelector('[role="dialog"]') !== null;
   
@@ -76,16 +84,16 @@ const handleKeyDown = (event: KeyboardEvent) => {
   shortcutPressed += event.key;
   
   // Execute the callback if the shortcut is registered
-  Object.keys(globalShortcuts).forEach(shortcut => {
+  Object.keys(window.globalShortcuts || {}).forEach(shortcut => {
     if (shortcut.toLowerCase() === shortcutPressed.toLowerCase()) {
       event.preventDefault();
       
       // If we're in a modal, only allow the ? shortcut
-      if (isModalOpen && shortcut !== '?') {
+      if (isModalOpen && shortcut !== '?' && shortcut !== 'Shift+?') {
         return;
       }
       
-      globalShortcuts[shortcut].callback();
+      window.globalShortcuts[shortcut].callback();
     }
   });
 };
@@ -97,9 +105,18 @@ if (typeof window !== 'undefined') {
 
 // Function to get all registered shortcuts
 export function getAllShortcuts(): Shortcut[] {
-  return Object.keys(globalShortcuts).map(key => ({
+  if (typeof window === 'undefined') return [];
+  
+  return Object.keys(window.globalShortcuts || {}).map(key => ({
     key,
-    callback: globalShortcuts[key].callback,
-    description: globalShortcuts[key].description,
+    callback: window.globalShortcuts[key].callback,
+    description: window.globalShortcuts[key].description,
   }));
+}
+
+// Add the global shortcut registry to the window object
+declare global {
+  interface Window {
+    globalShortcuts: ShortcutsMap;
+  }
 }

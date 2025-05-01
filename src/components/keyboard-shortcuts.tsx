@@ -4,15 +4,22 @@ import { Keyboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { getAllShortcuts, useHotkeys } from '@/hooks/use-hotkeys';
+import { useLocation } from 'react-router-dom';
 
 export function KeyboardShortcutsButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [shortcuts, setShortcuts] = useState<Array<{ key: string, description: string }>>([]);
+  const location = useLocation();
   
   // Register '?' shortcut to open the shortcuts dialog
   useHotkeys('?', () => {
     setIsOpen(true);
   }, "Show keyboard shortcuts");
+
+  // Also register Shift+? as an alternative
+  useHotkeys('Shift+?', () => {
+    setIsOpen(true);
+  }, "Show keyboard shortcuts (alternative)");
   
   // Add search shortcut for global focus
   useHotkeys('Ctrl+K', () => {
@@ -22,11 +29,11 @@ export function KeyboardShortcutsButton() {
     }
   }, "Focus search");
   
-  // Get all registered shortcuts
+  // Get all registered shortcuts when dialog opens or route changes
   useEffect(() => {
     const registeredShortcuts = getAllShortcuts();
     setShortcuts(registeredShortcuts.map(s => ({ key: s.key, description: s.description })));
-  }, [isOpen]);
+  }, [isOpen, location.pathname]);
   
   return (
     <>
