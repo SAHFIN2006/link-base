@@ -663,12 +663,57 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
     };
   };
   
-  const importData = async (data: { categories: Category[], resources: Resource[] }) => {
+  const exportData = () => {
+    const fullExport = {
+      categories: categories.map(category => ({
+        id: category.id,
+        name: category.name,
+        description: category.description,
+        icon: category.icon,
+        createdAt: category.createdAt,
+        updatedAt: category.updatedAt
+      })),
+      resources: resources.map(resource => ({
+        id: resource.id,
+        title: resource.title,
+        url: resource.url,
+        description: resource.description,
+        categoryId: resource.categoryId,
+        tags: resource.tags,
+        favorite: resource.favorite,
+        createdAt: resource.createdAt,
+        updatedAt: resource.updatedAt
+      })),
+      notes: notes.map(note => ({
+        id: note.id,
+        title: note.title,
+        content: note.content,
+        categoryId: note.categoryId,
+        created_at: note.created_at,
+        updated_at: note.updated_at
+      })),
+      files: files.map(file => ({
+        id: file.id,
+        name: file.name,
+        path: file.path,
+        size: file.size,
+        type: file.type,
+        url: file.url,
+        categoryId: file.categoryId,
+        created_at: file.created_at
+      }))
+    };
+    
+    return fullExport;
+  };
+  
+  const importData = async (data: any) => {
     try {
       setIsLoading(true);
       
       if (data.categories && data.categories.length > 0) {
-        const categoriesToImport = data.categories.map(cat => ({
+        console.log("Importing categories:", data.categories.length);
+        const categoriesToImport = data.categories.map((cat: any) => ({
           name: cat.name,
           description: cat.description,
           icon: cat.icon
@@ -682,6 +727,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
       }
       
       if (data.resources && data.resources.length > 0) {
+        console.log("Importing resources:", data.resources.length);
         await new Promise(resolve => setTimeout(resolve, 500));
         
         const { data: freshCategories } = await supabase
@@ -693,8 +739,8 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
           categoryMap.set(cat.name, cat.id);
         });
         
-        const resourcesToImport = data.resources.map(res => {
-          const categoryName = data.categories.find(c => c.id === res.categoryId)?.name;
+        const resourcesToImport = data.resources.map((res: any) => {
+          const categoryName = data.categories.find((c: any) => c.id === res.categoryId)?.name;
           const categoryId = categoryName ? categoryMap.get(categoryName) : null;
           
           return {
@@ -702,8 +748,8 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
             url: res.url,
             description: res.description,
             category_id: categoryId || null,
-            tags: res.tags,
-            favorite: res.favorite
+            tags: res.tags || [],
+            favorite: res.favorite || false
           };
         });
         
@@ -714,11 +760,121 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         if (error) throw error;
       }
       
+      if (data.notes && data.notes.length > 0) {
+        console.log("Importing notes:", data.notes.length);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const { data: freshCategories } = await supabase
+          .from('categories')
+          .select('*');
+          
+        const categoryMap = new Map();
+        freshCategories.forEach((cat: any) => {
+          categoryMap.set(cat.name, cat.id);
+        });
+        
+        const notesToImport = data.notes.map((note: any) => {
+          const categoryName = data.categories.find((c: any) => c.id === note.categoryId)?.name;
+          const categoryId = categoryName ? categoryMap.get(categoryName) : null;
+          
+          return {
+            title: note.title,
+            content: note.content,
+            category_id: categoryId || null
+          };
+        });
+        
+        const { error } = await supabase
+          .from('notes')
+          .insert(notesToImport);
+          
+        if (error) throw error;
+      }
+      
       toast({
         title: "Import Successful",
-        description: `Imported ${data.categories.length} categories and ${data.resources.length} resources.`,
+        description: `Imported ${data.categories?.length || 0} categories, ${data.resources?.length || 0} resources, and ${data.notes?.length || 0} notes.`,
       });
       
+      // Reload data after import
+      const loadData = async () => {
+        try {
+          const { data: categoriesData, error: categoriesError } = await supabase
+            .from('categories')
+            .select('*')
+            .order('name');
+            
+          if (categoriesError) throw categoriesError;
+          
+          const { data: resourcesData, error: resourcesError } = await supabase
+            .from('resources')
+            .select('*');
+            
+          if (resourcesError) throw resourcesError;
+          
+          const { data: notesData, error: notesError } = await supabase
+            .from('notes')
+            .select('*');
+            
+          if (notesError) throw notesError;
+          
+          const { data: filesData, error: filesError } = await supabase
+            .from('files')
+            .select('*');
+            
+          if (filesError) throw filesError;
+          
+          const transformedCategories = categoriesData.map((cat: any) => ({
+            id: cat.id,
+            name: cat.name,
+            description: cat.description || '',
+            icon: cat.icon,
+            createdAt: cat.created_at,
+            updatedAt: cat.updated_at
+          }));
+          
+          const transformedResources = resourcesData.map((res: any) => ({
+            id: res.id,
+            title: res.title,
+            url: res.url,
+            description: res.description || '',
+            categoryId: res.category_id,
+            tags: res.tags || [],
+            favorite: res.favorite || false,
+            createdAt: res.created_at,
+            updatedAt: res.updated_at
+          }));
+          
+          const transformedNotes = notesData.map((note: any) => ({
+            id: note.id,
+            title: note.title,
+            content: note.content || '',
+            categoryId: note.category_id,
+            created_at: note.created_at,
+            updated_at: note.updated_at
+          }));
+          
+          const transformedFiles = filesData.map((file: any) => ({
+            id: file.id,
+            name: file.name,
+            path: file.path,
+            size: file.size,
+            type: file.type,
+            url: file.url,
+            categoryId: file.category_id,
+            created_at: file.created_at
+          }));
+          
+          setCategories(transformedCategories);
+          setResources(transformedResources);
+          setNotes(transformedNotes);
+          setFiles(transformedFiles);
+        } catch (err) {
+          console.error("Error reloading data after import:", err);
+        }
+      };
+      
+      await loadData();
       setIsLoading(false);
     } catch (err) {
       console.error("Error importing data:", err);
@@ -729,13 +885,6 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         variant: "destructive"
       });
     }
-  };
-  
-  const exportData = () => {
-    return {
-      categories,
-      resources
-    };
   };
   
   return (

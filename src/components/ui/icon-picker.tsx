@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useMemo } from "react";
-import * as Icons from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ type IconComponent = React.ForwardRefExoticComponent<React.PropsWithoutRef<React
 const iconMap: Record<string, IconComponent> = {};
 
 // Add only the actual icon components to our map
-Object.entries(Icons).forEach(([name, component]) => {
+Object.entries(LucideIcons).forEach(([name, component]) => {
   // Skip utility functions and non-component exports
   if (
     name !== 'createLucideIcon' && 
@@ -37,10 +37,9 @@ interface IconPickerProps {
 export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [iconCategories, setIconCategories] = useState<Record<string, string[]>>({});
   
   // Default to Folder icon if the selected icon doesn't exist
-  const IconComponent = iconMap[selectedIcon] || Icons.Folder;
+  const IconComponent = iconMap[selectedIcon] || LucideIcons.Folder;
 
   // Most commonly used icons for categories to show first
   const popularIcons = [
@@ -52,80 +51,20 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
     "Link", "HeartHandshake", "Users", "Smile"
   ];
 
-  // Filter and categorize icons based on search term
-  useEffect(() => {
-    const categorizeIcons = () => {
-      // Define icon categories with their prefixes or patterns
-      const categories: Record<string, string[]> = {
-        "Communication": ["message", "mail", "phone", "chat"],
-        "Files & Documents": ["file", "folder", "document", "book"],
-        "Interface": ["layout", "sidebar", "panel", "grid", "list", "menu"],
-        "Technology": ["code", "server", "database", "cloud", "terminal"],
-        "People": ["user", "person", "profile", "avatar", "man", "woman"],
-        "Business": ["chart", "graph", "presentation", "briefcase", "trending"],
-        "Media": ["image", "video", "music", "audio", "camera", "play"],
-        "Shapes": ["square", "circle", "triangle", "hexagon", "octagon"],
-        "Weather & Nature": ["cloud", "sun", "moon", "snow", "rain", "tree", "leaf"],
-        "Travel": ["map", "compass", "navigation", "car", "plane", "bus"],
-        "Others": []
-      };
-      
-      const categorizedIcons: Record<string, string[]> = {
-        "Popular": [...popularIcons]
-      };
-      
-      // Initialize all categories
-      Object.keys(categories).forEach(category => {
-        categorizedIcons[category] = [];
-      });
-      
-      // Get all icon names
-      const allIconNames = Object.keys(iconMap);
-      
-      // Filter based on search term
-      const filteredIcons = searchTerm
-        ? allIconNames.filter(name => 
-            name.toLowerCase().includes(searchTerm.toLowerCase()))
-        : allIconNames;
-      
-      // For each filtered icon, find its category
-      filteredIcons.forEach(iconName => {
-        if (popularIcons.includes(iconName) && !searchTerm) {
-          // Skip popular icons in other categories if not searching
-          return;
-        }
-        
-        let assigned = false;
-        
-        // Check which category this icon belongs to
-        for (const [categoryName, patterns] of Object.entries(categories)) {
-          if (patterns.some(pattern => 
-            iconName.toLowerCase().includes(pattern.toLowerCase())
-          )) {
-            categorizedIcons[categoryName].push(iconName);
-            assigned = true;
-            break;
-          }
-        }
-        
-        // If no category matched, put in "Others"
-        if (!assigned) {
-          categorizedIcons["Others"].push(iconName);
-        }
-      });
-      
-      // Remove empty categories
-      const result: Record<string, string[]> = {};
-      for (const [category, icons] of Object.entries(categorizedIcons)) {
-        if (icons.length > 0) {
-          result[category] = icons.sort();
-        }
-      }
-      
-      return result;
-    };
+  // Filter icons based on search term
+  const filteredIcons = useMemo(() => {
+    const allIconNames = Object.keys(iconMap);
     
-    setIconCategories(categorizeIcons());
+    if (!searchTerm) {
+      // If no search, show popular icons first, then the rest alphabetically
+      const remainingIcons = allIconNames.filter(name => !popularIcons.includes(name)).sort();
+      return [...popularIcons, ...remainingIcons];
+    }
+    
+    // If searching, filter all icons by search term
+    return allIconNames.filter(name => 
+      name.toLowerCase().includes(searchTerm.toLowerCase())
+    ).sort();
   }, [searchTerm]);
 
   // Create a document click handler to close the dropdown when clicking outside
@@ -161,7 +100,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
       </div>
       
       {isOpen && (
-        <div className="absolute z-50 w-[340px] mt-2 p-3 bg-background/95 backdrop-blur-xl border border-border rounded-lg shadow-lg max-h-96 overflow-hidden flex flex-col">
+        <div className="absolute z-50 w-[340px] mt-2 p-3 bg-background/95 backdrop-blur-xl border border-border rounded-lg shadow-lg max-h-[500px] overflow-hidden flex flex-col">
           <div className="mb-2 relative">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -173,44 +112,31 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
             />
           </div>
           
-          <div className="overflow-y-auto flex-1">
-            {Object.entries(iconCategories).map(([category, icons]) => (
-              <div key={category} className="mb-4">
-                <div className="mb-2 text-sm font-medium text-muted-foreground">{category}</div>
-                <div className="grid grid-cols-8 gap-1">
-                  {icons.map((name) => {
-                    const Icon = iconMap[name];
-                    if (!Icon) return null;
-                    return (
-                      <Button
-                        key={name}
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "w-9 h-9",
-                          selectedIcon === name && "bg-primary/20 text-primary"
-                        )}
-                        onClick={() => {
-                          onSelectIcon(name);
-                          setIsOpen(false);
-                        }}
-                        title={name}
-                      >
-                        <Icon className="w-5 h-5" />
-                        <span className="sr-only">{name}</span>
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-            
-            {Object.keys(iconCategories).length === 0 && (
-              <div className="py-8 text-center text-muted-foreground">
-                No icons found for "{searchTerm}"
-              </div>
-            )}
+          <div className="overflow-y-auto flex-1 grid grid-cols-8 gap-1">
+            {filteredIcons.map((name) => {
+              const Icon = iconMap[name];
+              if (!Icon) return null;
+              return (
+                <Button
+                  key={name}
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "w-9 h-9",
+                    selectedIcon === name && "bg-primary/20 text-primary"
+                  )}
+                  onClick={() => {
+                    onSelectIcon(name);
+                    setIsOpen(false);
+                  }}
+                  title={name}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="sr-only">{name}</span>
+                </Button>
+              );
+            })}
           </div>
         </div>
       )}

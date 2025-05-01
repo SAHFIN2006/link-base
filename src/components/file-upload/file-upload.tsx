@@ -14,13 +14,13 @@ import {
   Table,
   Video,
   Music,
-  MoreHorizontal,
   Trash2
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { useDatabase } from "@/context/database-context";
+import { ShinyText } from "@/components/animations";
 
 interface FileUploadProps {
   categoryId: string;
@@ -39,7 +39,9 @@ export function FileUpload({ categoryId }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    getFilesByCategory(categoryId);
+    if (categoryId) {
+      getFilesByCategory(categoryId);
+    }
   }, [categoryId, getFilesByCategory]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,43 +56,34 @@ export function FileUpload({ categoryId }: FileUploadProps) {
     setProgress(0);
     
     try {
+      console.log("Creating storage bucket if needed");
       // Create the bucket if it doesn't exist (first time upload)
-      const { data: bucketData } = await supabase.storage.getBucket('file_uploads');
+      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('file_uploads');
       
       if (!bucketData) {
-        await supabase.storage.createBucket('file_uploads', {
+        console.log("Bucket doesn't exist, creating it");
+        const { error } = await supabase.storage.createBucket('file_uploads', {
           public: true,
           fileSizeLimit: 50 * 1024 * 1024 // 50MB
         });
+        
+        if (error) {
+          console.error("Error creating bucket:", error);
+          throw error;
+        }
+      } else if (bucketError) {
+        console.error("Error checking bucket:", bucketError);
+        throw bucketError;
       }
 
-      // Set up public access for the bucket
-      const { data: policyData } = await supabase.storage.from('file_uploads').getPublicUrl('test-policy');
-      
-      if (!policyData) {
-        // Add policy to allow public access
-        try {
-          // Fix: Use a properly typed custom function call instead of generic rpc
-          await supabase.storage.from('file_uploads').createSignedUrls(
-            ['test-policy'], 
-            60 // 60 seconds expiry
-          );
-          
-          // Since we can't directly create policies via the client,
-          // we'll rely on the configuration in supabase/config.toml instead
-          console.log("Using bucket configuration from supabase/config.toml");
-          
-        } catch (e) {
-          console.error("Policy creation error:", e);
-        }
-      }
-      
+      console.log("Starting file upload process");
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
         const fileExt = file.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2, 9)}_${file.name}`;
         const filePath = `${categoryId}/${fileName}`;
         
+        console.log(`Uploading file ${i+1}/${selectedFiles.length}: ${file.name}`);
         const { error: uploadError, data } = await supabase.storage
           .from('file_uploads')
           .upload(filePath, file, {
@@ -111,7 +104,8 @@ export function FileUpload({ categoryId }: FileUploadProps) {
         const { data: urlData } = supabase.storage
           .from('file_uploads')
           .getPublicUrl(filePath);
-          
+
+        console.log("File uploaded, adding to database:", urlData);  
         await addFile({
           name: file.name, 
           path: filePath, 
@@ -124,6 +118,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
         setProgress(Math.round(((i + 1) / selectedFiles.length) * 100));
       }
       
+      console.log("Files uploaded successfully");
       toast({
         title: "Files uploaded successfully",
         description: `Uploaded ${selectedFiles.length} file(s)`,
@@ -180,6 +175,8 @@ export function FileUpload({ categoryId }: FileUploadProps) {
     if (fileType.includes('sheet') || fileType.includes('excel') || fileType.includes('csv')) return <Table className="h-8 w-8 text-green-500" />;
     if (fileType.includes('video')) return <Video className="h-8 w-8 text-purple-500" />;
     if (fileType.includes('audio')) return <Music className="h-8 w-8 text-pink-500" />;
+    if (fileType.includes('word') || fileType.includes('doc')) return <FileText className="h-8 w-8 text-blue-500" />;
+    if (fileType.includes('presentation') || fileType.includes('ppt')) return <FileText className="h-8 w-8 text-orange-500" />;
     return <File className="h-8 w-8 text-gray-500" />;
   };
 
@@ -193,7 +190,9 @@ export function FileUpload({ categoryId }: FileUploadProps) {
   return (
     <div className="glass-card rounded-xl p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Files & Resources</h2>
+        <h2 className="text-2xl font-bold">
+          <ShinyText>Files & Resources</ShinyText>
+        </h2>
         <div>
           <input
             type="file"

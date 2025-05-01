@@ -13,6 +13,7 @@ import { Layout } from "@/components/layout";
 import { useDatabase, Resource } from "@/context/database-context";
 import { AddResourceDialog, ResourceFormData } from "@/components/dialogs/add-resource-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { SplitText, ShinyText, BlurText } from "@/components/animations";
 
 type SortOption = "newest" | "oldest" | "az" | "za";
 
@@ -101,9 +102,12 @@ export default function MyLinks() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
           <div>
-            <h1 className="text-4xl font-bold mb-2">My Resources</h1>
+            <h1 className="text-4xl font-bold mb-2">
+              <SplitText highlightClassName="text-linkblue">My </SplitText>
+              <ShinyText>Resources</ShinyText>
+            </h1>
             <p className="text-muted-foreground">
-              Manage and organize all your saved links
+              <BlurText startDelay={0.3}>Manage and organize all your saved links</BlurText>
             </p>
           </div>
           
@@ -245,7 +249,12 @@ export default function MyLinks() {
         </div>
         
         {filteredResources.length === 0 && (
-          <div className="text-center py-16">
+          <motion.div 
+            className="text-center py-16"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
             <Folder className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-2xl font-semibold mb-2">No resources found</h3>
             <p className="text-muted-foreground mb-6">
@@ -282,7 +291,7 @@ export default function MyLinks() {
                 </Button>
               )}
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
       

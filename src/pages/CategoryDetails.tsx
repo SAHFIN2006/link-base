@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -17,6 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoteEditor } from "@/components/notes/note-editor";
 import { FileUpload } from "@/components/file-upload/file-upload";
+import { SplitText, ShinyText, BlurText, DecryptedText } from "@/components/animations";
 
 export default function CategoryDetails() {
   const { categoryId } = useParams<{ categoryId: string }>();
@@ -148,8 +150,12 @@ export default function CategoryDetails() {
                 {getCategoryIcon(category.id)}
               </div>
               <div>
-                <h1 className="text-4xl font-bold">{category.name}</h1>
-                <p className="text-muted-foreground mt-1">{category.description}</p>
+                <h1 className="text-4xl font-bold">
+                  <ShinyText>{category.name}</ShinyText>
+                </h1>
+                <p className="text-muted-foreground mt-1">
+                  <BlurText>{category.description}</BlurText>
+                </p>
               </div>
             </div>
             
@@ -195,7 +201,9 @@ export default function CategoryDetails() {
           <TabsContent value="resources">
             <div className="mb-10">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
-                <h2 className="text-2xl font-bold">Resources ({categoryResources.length})</h2>
+                <h2 className="text-2xl font-bold">
+                  <DecryptedText>Resources ({categoryResources.length})</DecryptedText>
+                </h2>
                 <Button 
                   onClick={() => {
                     setResourceToEdit(undefined);
@@ -221,24 +229,35 @@ export default function CategoryDetails() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredResources.map((resource, index) => (
-                  <ResourceCard
+                  <motion.div
                     key={resource.id}
-                    id={resource.id}
-                    title={resource.title}
-                    url={resource.url}
-                    description={resource.description}
-                    tags={resource.tags}
-                    favorite={resource.favorite}
-                    delay={index}
-                    onEdit={handleEditResource}
-                    onDelete={deleteResource}
-                    onFavorite={toggleFavorite}
-                  />
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                  >
+                    <ResourceCard
+                      id={resource.id}
+                      title={resource.title}
+                      url={resource.url}
+                      description={resource.description}
+                      tags={resource.tags}
+                      favorite={resource.favorite}
+                      delay={index}
+                      onEdit={handleEditResource}
+                      onDelete={deleteResource}
+                      onFavorite={toggleFavorite}
+                    />
+                  </motion.div>
                 ))}
               </div>
               
               {filteredResources.length === 0 && (
-                <div className="text-center py-16">
+                <motion.div 
+                  className="text-center py-16"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
                   <Folder className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
                   <h3 className="text-2xl font-semibold mb-2">No resources found</h3>
                   <p className="text-muted-foreground mb-6">
@@ -256,7 +275,7 @@ export default function CategoryDetails() {
                     <Plus size={18} />
                     Add New Resource
                   </Button>
-                </div>
+                </motion.div>
               )}
             </div>
           </TabsContent>
@@ -271,6 +290,7 @@ export default function CategoryDetails() {
         </Tabs>
       </div>
       
+      {/* Resource Dialog */}
       <AddResourceDialog
         categories={categories}
         initialData={resourceToEdit}
