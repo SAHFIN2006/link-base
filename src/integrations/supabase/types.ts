@@ -149,6 +149,7 @@ export type Database = {
           description: string | null
           favorite: boolean | null
           id: string
+          identification_data: Json | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -160,6 +161,7 @@ export type Database = {
           description?: string | null
           favorite?: boolean | null
           id?: string
+          identification_data?: Json | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -171,6 +173,7 @@ export type Database = {
           description?: string | null
           favorite?: boolean | null
           id?: string
+          identification_data?: Json | null
           tags?: string[] | null
           title?: string
           updated_at?: string

@@ -759,7 +759,8 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
             description: res.description,
             category_id: categoryId || null,
             tags: res.tags || [],
-            favorite: res.favorite || false
+            favorite: res.favorite || false,
+            identification_data: res.identificationData || null
           };
         });
         
