@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { DatabaseProvider } from "@/context/database-context";
 import { ThemeProvider } from "@/context/theme-context";
 import { useEffect, useState } from "react";
@@ -43,7 +43,7 @@ function WelcomeNotification() {
   
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[500px] glass-panel border-white/10">
+      <DialogContent className="sm:max-w-[500px] glass-panel">
         <DialogHeader>
           <DialogTitle className="text-center text-2xl">
             <ShinyText>Welcome to LinkVault</ShinyText>

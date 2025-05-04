@@ -159,7 +159,7 @@
 
 @layer components {
   .glass-card {
-    @apply bg-black/40 backdrop-blur-lg border border-white/10 shadow-lg dark:bg-black/40 dark:backdrop-blur-lg dark:border-white/10 dark:shadow-lg;
+    @apply bg-black/40 backdrop-blur-lg border border-white/10 shadow-lg;
   }
   
   .light .glass-card {
@@ -167,7 +167,7 @@
   }
   
   .glass-panel {
-    @apply bg-black/30 backdrop-blur-md border border-white/10 dark:bg-black/30 dark:backdrop-blur-md dark:border-white/10;
+    @apply bg-black/30 backdrop-blur-md border border-white/10;
   }
   
   .light .glass-panel {
@@ -197,19 +197,35 @@
 
   /* Light mode specific components */
   .light .navbar-link {
-    @apply text-gray-700 hover:text-linkblue dark:text-muted-foreground dark:hover:text-white;
+    @apply text-gray-700 hover:text-linkblue;
+  }
+  
+  .dark .navbar-link {
+    @apply text-muted-foreground hover:text-white;
   }
 
   .light .navbar-link-active {
-    @apply text-linkblue font-medium dark:text-white;
+    @apply text-linkblue font-medium;
+  }
+  
+  .dark .navbar-link-active {
+    @apply text-white font-medium;
   }
 
   .light .resource-tag {
-    @apply bg-linkblue/10 text-linkblue dark:bg-primary/20 dark:text-primary-foreground;
+    @apply bg-linkblue/10 text-linkblue;
+  }
+  
+  .dark .resource-tag {
+    @apply bg-primary/20 text-primary-foreground;
   }
 
   .light .search-input {
-    @apply bg-white border-gray-200 focus:border-linkblue dark:bg-black/40 dark:border-white/10;
+    @apply bg-white border-gray-200 focus:border-linkblue;
+  }
+  
+  .dark .search-input {
+    @apply bg-black/40 border-white/10;
   }
 }
 
