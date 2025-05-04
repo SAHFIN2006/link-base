@@ -219,7 +219,7 @@ export default function Index() {
               </div>
               <div className="text-center p-4">
                 <p className="text-2xl md:text-3xl font-bold text-foreground">{stats.favoriteResources}</p>
-                <p className="text-muted-foreground">Favorites</p>
+                <p className="text-muted-foreground">Favourites</p>
               </div>
             </motion.div>
           </div>
