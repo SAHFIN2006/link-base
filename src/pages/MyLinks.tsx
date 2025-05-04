@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -60,6 +59,23 @@ export default function MyLinks() {
         return 0;
     }
   });
+  
+  // Define the missing handleEditResource function
+  const handleEditResource = (id: string) => {
+    const resource = resources.find(r => r.id === id);
+    if (resource) {
+      setResourceToEdit({
+        id: resource.id,
+        title: resource.title,
+        url: resource.url,
+        description: resource.description,
+        categoryId: resource.categoryId,
+        tags: resource.tags,
+        identificationData: resource.identificationData
+      });
+      setIsAddResourceDialogOpen(true);
+    }
+  };
   
   // Handle add/edit resource
   const handleSaveResource = (data: ResourceFormData) => {
