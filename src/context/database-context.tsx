@@ -21,6 +21,12 @@ export interface Resource {
   favorite: boolean;
   createdAt: string;
   updatedAt: string;
+  identificationData?: {
+    owner?: string;
+    contactInfo?: string;
+    accessType?: 'public' | 'private' | 'restricted';
+    createdBy?: string;
+  };
 }
 
 export interface Note {
@@ -181,7 +187,8 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
           tags: res.tags || [],
           favorite: res.favorite || false,
           createdAt: res.created_at,
-          updatedAt: res.updated_at
+          updatedAt: res.updated_at,
+          identificationData: res.identification_data || undefined
         }));
         
         const transformedNotes = notesData.map(note => ({
@@ -385,7 +392,8 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
           url: resourceData.url,
           description: resourceData.description,
           category_id: resourceData.categoryId,
-          tags: resourceData.tags
+          tags: resourceData.tags,
+          identification_data: resourceData.identificationData || null
         }])
         .select()
         .single();
@@ -401,7 +409,8 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         tags: data.tags || [],
         favorite: data.favorite || false,
         createdAt: data.created_at,
-        updatedAt: data.updated_at
+        updatedAt: data.updated_at,
+        identificationData: data.identification_data || undefined
       };
       
       setResources(prev => [...prev, newResource]);
@@ -427,7 +436,8 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
           description: data.description,
           category_id: data.categoryId,
           tags: data.tags,
-          favorite: data.favorite
+          favorite: data.favorite,
+          identification_data: data.identificationData || null
         })
         .eq('id', id);
         
@@ -842,7 +852,8 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
             tags: res.tags || [],
             favorite: res.favorite || false,
             createdAt: res.created_at,
-            updatedAt: res.updated_at
+            updatedAt: res.updated_at,
+            identificationData: res.identification_data || undefined
           }));
           
           const transformedNotes = notesData.map((note: any) => ({
