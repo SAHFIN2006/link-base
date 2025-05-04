@@ -46,11 +46,11 @@ function WelcomeNotification() {
       <DialogContent className="sm:max-w-[500px] glass-panel">
         <DialogHeader>
           <DialogTitle className="text-center text-2xl">
-            <ShinyText>Welcome to LinkVault</ShinyText>
+            <ShinyText>Welcome to LinkBase</ShinyText>
           </DialogTitle>
         </DialogHeader>
         <DialogDescription className="text-center py-6">
-          This is a Vibe Coding Project, Don't expect anything work properly.<br/><br/>
+          This is a Vibe Coding Project, Don't expect everything to work properly.<br/><br/>
           Built with <a href="https://lovable.dev" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">lovable.dev</a>
         </DialogDescription>
         <DialogFooter>
