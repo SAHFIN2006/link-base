@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,10 +92,8 @@ export function FileUpload({ categoryId }: FileUploadProps) {
           
         if (uploadError) {
           console.error("Upload error:", uploadError);
-          toast({
-            title: "Error uploading file",
-            description: uploadError.message,
-            variant: "destructive"
+          toast.error("Error uploading file", {
+            description: uploadError.message
           });
           continue;
         }
@@ -119,19 +116,16 @@ export function FileUpload({ categoryId }: FileUploadProps) {
       }
       
       console.log("Files uploaded successfully");
-      toast({
-        title: "Files uploaded successfully",
-        description: `Uploaded ${selectedFiles.length} file(s)`,
+      toast.success("Files uploaded successfully", {
+        description: `Uploaded ${selectedFiles.length} file(s)`
       });
 
       // Refresh the file list after upload
       getFilesByCategory(categoryId);
     } catch (error) {
       console.error("Error uploading file:", error);
-      toast({
-        title: "Upload failed",
-        description: "There was an error uploading your file(s). Please try again.",
-        variant: "destructive"
+      toast.error("Upload failed", {
+        description: "There was an error uploading your file(s). Please try again."
       });
     } finally {
       setUploading(false);
@@ -150,8 +144,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
         
       await deleteFile(id, path);
       
-      toast({
-        title: "File deleted",
+      toast.success("File deleted", {
         description: "The file has been deleted successfully"
       });
       
@@ -159,8 +152,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
       getFilesByCategory(categoryId);
     } catch (error) {
       console.error("Error deleting file:", error);
-      toast({
-        title: "Delete failed",
+      toast.error("Delete failed", {
         description: "There was an error deleting the file"
       });
     }
