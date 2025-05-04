@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoteEditor } from "@/components/notes/note-editor";
 import { FileUpload } from "@/components/file-upload/file-upload";
 import { ShinyText } from "@/components/animations";
+import { toast } from "@/hooks/use-toast";
 
 export default function CategoryDetails() {
   const { categoryId } = useParams<{ categoryId: string }>();
@@ -78,13 +79,35 @@ export default function CategoryDetails() {
   };
   
   const handleSaveResource = (data: ResourceFormData) => {
-    if (data.id) {
-      updateResource(data.id, data);
-    } else {
-      addResource({ ...data, categoryId: categoryId || "" });
+    try {
+      // Log the identification data for debugging
+      if (data.identificationData) {
+        console.log("Saving resource with identification data:", data.identificationData);
+      }
+      
+      if (data.id) {
+        updateResource(data.id, data);
+        toast({
+          title: "Resource updated",
+          description: "Your resource has been successfully updated",
+        });
+      } else {
+        addResource({ ...data, categoryId: categoryId || "" });
+        toast({
+          title: "Resource added",
+          description: "Your resource has been successfully added to this category",
+        });
+      }
+      setIsAddResourceDialogOpen(false);
+      setResourceToEdit(undefined);
+    } catch (error) {
+      console.error("Error saving resource:", error);
+      toast({
+        title: "Error",
+        description: "There was an error saving your resource",
+        variant: "destructive",
+      });
     }
-    setIsAddResourceDialogOpen(false);
-    setResourceToEdit(undefined);
   };
   
   const handleEditResource = (id: string) => {

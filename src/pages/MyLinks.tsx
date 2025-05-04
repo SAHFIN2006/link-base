@@ -14,6 +14,7 @@ import { useDatabase, Resource } from "@/context/database-context";
 import { AddResourceDialog, ResourceFormData } from "@/components/dialogs/add-resource-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { SplitText, ShinyText, BlurText } from "@/components/animations";
+import { toast } from "@/hooks/use-toast";
 
 type SortOption = "newest" | "oldest" | "az" | "za";
 
@@ -62,28 +63,34 @@ export default function MyLinks() {
   
   // Handle add/edit resource
   const handleSaveResource = (data: ResourceFormData) => {
-    if (data.id) {
-      updateResource(data.id, data);
-    } else {
-      addResource(data);
-    }
-    setIsAddResourceDialogOpen(false);
-    setResourceToEdit(undefined);
-  };
-  
-  // Handle resource edit
-  const handleEditResource = (id: string) => {
-    const resource = resources.find(r => r.id === id);
-    if (resource) {
-      setResourceToEdit({
-        id: resource.id,
-        title: resource.title,
-        url: resource.url,
-        description: resource.description,
-        categoryId: resource.categoryId,
-        tags: resource.tags
+    try {
+      // Log the identification data for debugging
+      if (data.identificationData) {
+        console.log("Saving resource with identification data:", data.identificationData);
+      }
+      
+      if (data.id) {
+        updateResource(data.id, data);
+        toast({
+          title: "Resource updated",
+          description: "Your resource has been successfully updated",
+        });
+      } else {
+        addResource(data);
+        toast({
+          title: "Resource added",
+          description: "Your resource has been successfully added",
+        });
+      }
+      setIsAddResourceDialogOpen(false);
+      setResourceToEdit(undefined);
+    } catch (error) {
+      console.error("Error saving resource:", error);
+      toast({
+        title: "Error",
+        description: "There was an error saving your resource",
+        variant: "destructive",
       });
-      setIsAddResourceDialogOpen(true);
     }
   };
   

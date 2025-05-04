@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useDatabase } from "@/context/database-context";
+import { FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import { toast } from "@/hooks/use-toast";
 
 export interface ResourceFormData {
   id?: string;
@@ -14,6 +15,12 @@ export interface ResourceFormData {
   description: string;
   categoryId: string;
   tags: string[];
+  identificationData?: {
+    owner?: string;
+    contactInfo?: string;
+    accessType?: 'public' | 'private' | 'restricted';
+    createdBy?: string;
+  };
 }
 
 interface AddResourceDialogProps {
@@ -54,11 +61,18 @@ export function AddResourceDialog({
       description: "",
       categoryId: categories[0]?.id || "",
       tags: [],
+      identificationData: {
+        owner: "",
+        contactInfo: "",
+        accessType: 'public',
+        createdBy: ""
+      }
     }
   );
   const [tagInput, setTagInput] = useState("");
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [mediaUrl, setMediaUrl] = useState("");
+  const [showIdentificationData, setShowIdentificationData] = useState(false);
   
   const isEditing = !!initialData?.id;
   
@@ -105,7 +119,20 @@ export function AddResourceDialog({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Handle nested identificationData fields
+    if (name.startsWith('identificationData.')) {
+      const field = name.split('.')[1];
+      setFormData((prev) => ({
+        ...prev,
+        identificationData: {
+          ...prev.identificationData,
+          [field]: value
+        }
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleAddTag = (tag: string = tagInput.trim()) => {
@@ -157,6 +184,20 @@ export function AddResourceDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate identification data if shown
+    if (showIdentificationData) {
+      const { identificationData } = formData;
+      if (!identificationData?.owner) {
+        toast({
+          title: "Owner field is required",
+          description: "Please provide the owner information",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     onSave(formData);
   };
 
@@ -229,6 +270,73 @@ export function AddResourceDialog({
                 ))}
               </select>
             </div>
+            
+            {/* Identification Data Toggle */}
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="mt-2" 
+              onClick={() => setShowIdentificationData(!showIdentificationData)}
+            >
+              {showIdentificationData ? "Hide Identification Data" : "Add Identification Data"}
+            </Button>
+            
+            {/* Identification Data Fields */}
+            {showIdentificationData && (
+              <div className="border rounded-md p-4 mt-2 bg-black/20">
+                <h4 className="font-medium mb-3">Resource Identification</h4>
+                
+                <div className="grid gap-3">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="owner">Owner</Label>
+                    <Input
+                      id="owner"
+                      name="identificationData.owner"
+                      value={formData.identificationData?.owner || ""}
+                      onChange={handleChange}
+                      placeholder="Resource owner"
+                    />
+                  </div>
+                  
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="contactInfo">Contact Information</Label>
+                    <Input
+                      id="contactInfo"
+                      name="identificationData.contactInfo"
+                      value={formData.identificationData?.contactInfo || ""}
+                      onChange={handleChange}
+                      placeholder="Contact email or phone"
+                    />
+                  </div>
+                  
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="accessType">Access Type</Label>
+                    <select
+                      id="accessType"
+                      name="identificationData.accessType"
+                      value={formData.identificationData?.accessType || "public"}
+                      onChange={handleChange}
+                      className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="public">Public</option>
+                      <option value="private">Private</option>
+                      <option value="restricted">Restricted</option>
+                    </select>
+                  </div>
+                  
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="createdBy">Created By</Label>
+                    <Input
+                      id="createdBy"
+                      name="identificationData.createdBy"
+                      value={formData.identificationData?.createdBy || ""}
+                      onChange={handleChange}
+                      placeholder="Creator name"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
             
             <div className="grid gap-2">
               <Label htmlFor="tags">Tags</Label>
