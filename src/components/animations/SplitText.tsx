@@ -7,6 +7,7 @@ interface SplitTextProps {
   className?: string;
   highlightClassName?: string;
   tag?: keyof JSX.IntrinsicElements;
+  startDelay?: number; // Added this prop for consistency
 }
 
 export function SplitText({
@@ -14,6 +15,7 @@ export function SplitText({
   className,
   highlightClassName = "text-primary",
   tag: Tag = "span",
+  startDelay, // Added this parameter
 }: SplitTextProps) {
   return (
     <Tag className={cn("inline-block", className, highlightClassName)}>
