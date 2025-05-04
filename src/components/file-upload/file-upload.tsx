@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { useDatabase } from "@/context/database-context";
-import { ShinyText } from "@/components/animations";
 
 interface FileUploadProps {
   categoryId: string;
@@ -68,10 +68,12 @@ export function FileUpload({ categoryId }: FileUploadProps) {
         
         if (error) {
           console.error("Error creating bucket:", error);
+          toast("Error creating bucket");
           throw error;
         }
       } else if (bucketError) {
         console.error("Error checking bucket:", bucketError);
+        toast("Error checking bucket");
         throw bucketError;
       }
 
@@ -92,9 +94,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
           
         if (uploadError) {
           console.error("Upload error:", uploadError);
-          toast.error("Error uploading file", {
-            description: uploadError.message
-          });
+          toast("Error uploading file");
           continue;
         }
         
@@ -116,17 +116,13 @@ export function FileUpload({ categoryId }: FileUploadProps) {
       }
       
       console.log("Files uploaded successfully");
-      toast.success("Files uploaded successfully", {
-        description: `Uploaded ${selectedFiles.length} file(s)`
-      });
+      toast("Files uploaded successfully");
 
       // Refresh the file list after upload
       getFilesByCategory(categoryId);
     } catch (error) {
       console.error("Error uploading file:", error);
-      toast.error("Upload failed", {
-        description: "There was an error uploading your file(s). Please try again."
-      });
+      toast("Upload failed");
     } finally {
       setUploading(false);
       setProgress(0);
@@ -144,17 +140,13 @@ export function FileUpload({ categoryId }: FileUploadProps) {
         
       await deleteFile(id, path);
       
-      toast.success("File deleted", {
-        description: "The file has been deleted successfully"
-      });
+      toast("File deleted");
       
       // Refresh the file list after deletion
       getFilesByCategory(categoryId);
     } catch (error) {
       console.error("Error deleting file:", error);
-      toast.error("Delete failed", {
-        description: "There was an error deleting the file"
-      });
+      toast("Delete failed");
     }
   };
 
@@ -188,7 +180,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
     <div className="glass-card rounded-xl p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">
-          <ShinyText>Files & Resources</ShinyText>
+          Files & Resources
         </h2>
         <div>
           <input

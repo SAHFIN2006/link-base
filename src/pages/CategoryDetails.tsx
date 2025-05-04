@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -18,7 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoteEditor } from "@/components/notes/note-editor";
 import { FileUpload } from "@/components/file-upload/file-upload";
-import { SplitText, ShinyText, BlurText } from "@/components/animations";
+import { ShinyText } from "@/components/animations";
 
 export default function CategoryDetails() {
   const { categoryId } = useParams<{ categoryId: string }>();
@@ -154,7 +153,7 @@ export default function CategoryDetails() {
                   <ShinyText>{category.name}</ShinyText>
                 </h1>
                 <p className="text-muted-foreground mt-1">
-                  <BlurText>{category.description}</BlurText>
+                  {category.description}
                 </p>
               </div>
             </div>
@@ -231,9 +230,8 @@ export default function CategoryDetails() {
                 {filteredResources.map((resource, index) => (
                   <motion.div
                     key={resource.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    initial={{ opacity: 1 }}
+                    animate={{ opacity: 1 }}
                   >
                     <ResourceCard
                       id={resource.id}
@@ -252,12 +250,7 @@ export default function CategoryDetails() {
               </div>
               
               {filteredResources.length === 0 && (
-                <motion.div 
-                  className="text-center py-16"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5 }}
-                >
+                <div className="text-center py-16">
                   <Folder className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
                   <h3 className="text-2xl font-semibold mb-2">No resources found</h3>
                   <p className="text-muted-foreground mb-6">
@@ -275,7 +268,7 @@ export default function CategoryDetails() {
                     <Plus size={18} />
                     Add New Resource
                   </Button>
-                </motion.div>
+                </div>
               )}
             </div>
           </TabsContent>
@@ -317,7 +310,7 @@ export default function CategoryDetails() {
       )}
       
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] glass-panel border-white/10">
+        <DialogContent className="sm:max-w-[425px] glass-panel">
           <DialogHeader>
             <DialogTitle>Delete Category</DialogTitle>
             <DialogDescription>

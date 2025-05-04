@@ -50,7 +50,7 @@ function WelcomeNotification() {
           </DialogTitle>
         </DialogHeader>
         <DialogDescription className="text-center py-6">
-          This is a fucking Vibe Coding Project, Don't expect anything work properly.<br/><br/>
+          This is a Vibe Coding Project, Don't expect anything work properly.<br/><br/>
           Built with <a href="https://lovable.dev" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">lovable.dev</a>
         </DialogDescription>
         <DialogFooter>
