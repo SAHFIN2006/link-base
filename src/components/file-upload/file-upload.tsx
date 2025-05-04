@@ -80,12 +80,11 @@ export function FileUpload({ categoryId }: FileUploadProps) {
       console.log("Starting file upload process");
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
-        const fileExt = file.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2, 9)}_${file.name}`;
         const filePath = `${categoryId}/${fileName}`;
         
-        console.log(`Uploading file ${i+1}/${selectedFiles.length}: ${file.name}`);
-        const { error: uploadError, data } = await supabase.storage
+        console.log(`Uploading file ${i + 1}/${selectedFiles.length}: ${file.name}`);
+        const { error: uploadError } = await supabase.storage
           .from('file_uploads')
           .upload(filePath, file, {
             cacheControl: '3600',
@@ -102,15 +101,20 @@ export function FileUpload({ categoryId }: FileUploadProps) {
           .from('file_uploads')
           .getPublicUrl(filePath);
 
-        console.log("File uploaded, adding to database:", urlData);  
-        await addFile({
-          name: file.name, 
-          path: filePath, 
-          size: file.size, 
-          type: file.type, 
-          categoryId: categoryId,
-          url: urlData.publicUrl
-        });
+        if (urlData?.publicUrl) {
+          console.log("File uploaded, adding to database:", urlData.publicUrl);  
+          await addFile({
+            name: file.name, 
+            path: filePath, 
+            size: file.size, 
+            type: file.type, 
+            categoryId: categoryId,
+            url: urlData.publicUrl
+          });
+        } else {
+          console.error("Failed to retrieve public URL for file:", file.name);
+          toast("Failed to retrieve file URL");
+        }
         
         setProgress(Math.round(((i + 1) / selectedFiles.length) * 100));
       }

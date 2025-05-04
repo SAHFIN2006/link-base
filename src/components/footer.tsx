@@ -1,11 +1,10 @@
-
 import { Link } from "react-router-dom";
 import { ShinyText } from "@/components/animations";
 import { 
   Github, 
   Twitter, 
   Mail,
-  Phone,
+  Globe,
   MapPin,
   Heart
 } from "lucide-react";
@@ -59,12 +58,12 @@ export function Footer() {
                 <span>sahfin2006@gmail.com</span>
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Phone size={14} />
-                <span>+8801817822802</span>
+                <Globe size={14} />
+                <span>www.example-portfolio.com</span>
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin size={14} />
-                <span>Dhaka,Bangladesh</span>
+                <span>Dhaka, Bangladesh</span>
               </li>
             </ul>
           </div>
