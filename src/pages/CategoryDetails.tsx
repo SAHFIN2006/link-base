@@ -78,6 +78,22 @@ export default function CategoryDetails() {
     }
   };
   
+  const handleEditResource = (id: string) => {
+    const resource = categoryResources.find(r => r.id === id);
+    if (resource) {
+      setResourceToEdit({
+        id: resource.id,
+        title: resource.title,
+        url: resource.url,
+        description: resource.description,
+        categoryId: resource.categoryId,
+        tags: resource.tags,
+        identificationData: resource.identificationData
+      });
+      setIsAddResourceDialogOpen(true);
+    }
+  };
+  
   const handleSaveResource = (data: ResourceFormData) => {
     try {
       // Log the identification data for debugging
@@ -107,21 +123,6 @@ export default function CategoryDetails() {
         description: "There was an error saving your resource",
         variant: "destructive",
       });
-    }
-  };
-  
-  const handleEditResource = (id: string) => {
-    const resource = categoryResources.find(r => r.id === id);
-    if (resource) {
-      setResourceToEdit({
-        id: resource.id,
-        title: resource.title,
-        url: resource.url,
-        description: resource.description,
-        categoryId: resource.categoryId,
-        tags: resource.tags
-      });
-      setIsAddResourceDialogOpen(true);
     }
   };
   

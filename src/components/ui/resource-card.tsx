@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ExternalLink, Star, Trash, Edit, Share2 } from "lucide-react";
+import { ExternalLink, Star, Trash, Edit, Share2, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface ResourceCardProps {
   id: string;
@@ -18,6 +19,12 @@ export interface ResourceCardProps {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onFavorite?: (id: string, status: boolean) => void;
+  identificationData?: {
+    owner?: string;
+    contactInfo?: string;
+    accessType?: 'public' | 'private' | 'restricted';
+    createdBy?: string;
+  };
 }
 
 export function ResourceCard({ 
@@ -31,7 +38,8 @@ export function ResourceCard({
   delay = 0,
   onEdit,
   onDelete,
-  onFavorite
+  onFavorite,
+  identificationData
 }: ResourceCardProps) {
   const [isFavorite, setIsFavorite] = useState(favorite);
   const [isHovered, setIsHovered] = useState(false);
@@ -93,6 +101,9 @@ export function ResourceCard({
     }
   };
 
+  // Display type based on URL
+  const isYouTubeVideo = url.includes('youtube.com/embed/') || url.includes('youtu.be/');
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -113,25 +124,59 @@ export function ResourceCard({
       >
         <div className="flex justify-between items-start mb-3">
           <h3 className="text-lg font-medium line-clamp-1">{title}</h3>
-          <Button 
-            size="icon" 
-            variant="ghost" 
-            className={cn(
-              "h-8 w-8 rounded-full transition-colors",
-              isFavorite ? "text-yellow-400 hover:text-yellow-500" : "text-muted-foreground hover:text-foreground"
+          <div className="flex items-center">
+            {identificationData && identificationData.owner && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8 rounded-full"
+                    >
+                      <Info className="h-4 w-4 text-primary/80" />
+                      <span className="sr-only">Resource Info</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-xs">
+                      <p><strong>Owner:</strong> {identificationData.owner}</p>
+                      {identificationData.accessType && (
+                        <p><strong>Access:</strong> {identificationData.accessType}</p>
+                      )}
+                      {identificationData.createdBy && (
+                        <p><strong>Created by:</strong> {identificationData.createdBy}</p>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
-            onClick={handleFavoriteClick}
-          >
-            <Star className={cn("h-4 w-4", isFavorite && "fill-yellow-400")} />
-            <span className="sr-only">Favorite</span>
-          </Button>
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              className={cn(
+                "h-8 w-8 rounded-full transition-colors",
+                isFavorite ? "text-yellow-400 hover:text-yellow-500" : "text-muted-foreground hover:text-foreground"
+              )}
+              onClick={handleFavoriteClick}
+            >
+              <Star className={cn("h-4 w-4", isFavorite && "fill-yellow-400")} />
+              <span className="sr-only">Favorite</span>
+            </Button>
+          </div>
         </div>
         
         <p className="text-muted-foreground text-sm line-clamp-2 mb-4">{description}</p>
         
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
-            {tags.map((tag) => (
+            {isYouTubeVideo && (
+              <span className="text-xs px-2 py-1 rounded-full bg-red-500/20 text-red-400">
+                #youtube
+              </span>
+            )}
+            {tags.filter(tag => tag !== 'youtube').slice(0, 3).map((tag) => (
               <span 
                 key={tag} 
                 className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary"
@@ -139,12 +184,17 @@ export function ResourceCard({
                 #{tag}
               </span>
             ))}
+            {tags.length > 4 && (
+              <span className="text-xs px-2 py-1 rounded-full bg-gray-500/20 text-gray-400">
+                +{tags.length - 4} more
+              </span>
+            )}
           </div>
         )}
         
         <div className="flex items-center justify-between mt-auto pt-2 border-t border-border">
           <div className="text-xs text-muted-foreground truncate max-w-[180px]">
-            {new URL(url).hostname}
+            {isYouTubeVideo ? 'YouTube Video' : new URL(url).hostname}
           </div>
           
           <div className={cn(

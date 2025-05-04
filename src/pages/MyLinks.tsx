@@ -60,7 +60,7 @@ export default function MyLinks() {
     }
   });
   
-  // Define the missing handleEditResource function
+  // Define the handleEditResource function
   const handleEditResource = (id: string) => {
     const resource = resources.find(r => r.id === id);
     if (resource) {
