@@ -55,26 +55,28 @@ export function FileUpload({ categoryId }: FileUploadProps) {
     setProgress(0);
     
     try {
-      console.log("Creating storage bucket if needed");
-      // Create the bucket if it doesn't exist (first time upload)
-      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('file_uploads');
+      // First, check if the bucket exists already
+      const { data: buckets } = await supabase.storage.listBuckets();
       
-      if (!bucketData) {
-        console.log("Bucket doesn't exist, creating it");
-        const { error } = await supabase.storage.createBucket('file_uploads', {
-          public: true,
-          fileSizeLimit: 50 * 1024 * 1024 // 50MB
-        });
-        
-        if (error) {
-          console.error("Error creating bucket:", error);
-          toast("Error creating bucket");
-          throw error;
+      let bucketExists = buckets?.some(bucket => bucket.name === 'file_uploads');
+      
+      if (!bucketExists) {
+        console.log("Creating storage bucket");
+        try {
+          // Try to create the bucket with public access
+          await supabase.storage.createBucket('file_uploads', {
+            public: true,
+            fileSizeLimit: 50 * 1024 * 1024 // 50MB
+          });
+          
+          // Set bucket to public after creation
+          await supabase.storage.getBucket('file_uploads');
+          
+          console.log("Bucket created successfully");
+        } catch (bucketError) {
+          console.error("Error creating bucket:", bucketError);
+          toast.error("Error setting up storage bucket. Please try again later.");
         }
-      } else if (bucketError) {
-        console.error("Error checking bucket:", bucketError);
-        toast("Error checking bucket");
-        throw bucketError;
       }
 
       console.log("Starting file upload process");
@@ -84,7 +86,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
         const filePath = `${categoryId}/${fileName}`;
         
         console.log(`Uploading file ${i + 1}/${selectedFiles.length}: ${file.name}`);
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError, data } = await supabase.storage
           .from('file_uploads')
           .upload(filePath, file, {
             cacheControl: '3600',
@@ -93,7 +95,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
           
         if (uploadError) {
           console.error("Upload error:", uploadError);
-          toast("Error uploading file");
+          toast.error(`Error uploading ${file.name}: ${uploadError.message}`);
           continue;
         }
         
@@ -111,22 +113,21 @@ export function FileUpload({ categoryId }: FileUploadProps) {
             categoryId: categoryId,
             url: urlData.publicUrl
           });
+          
+          toast.success(`${file.name} uploaded successfully`);
         } else {
           console.error("Failed to retrieve public URL for file:", file.name);
-          toast("Failed to retrieve file URL");
+          toast.error(`Failed to retrieve URL for ${file.name}`);
         }
         
         setProgress(Math.round(((i + 1) / selectedFiles.length) * 100));
       }
       
-      console.log("Files uploaded successfully");
-      toast("Files uploaded successfully");
-
       // Refresh the file list after upload
       getFilesByCategory(categoryId);
     } catch (error) {
       console.error("Error uploading file:", error);
-      toast("Upload failed");
+      toast.error("Upload failed. Please try again.");
     } finally {
       setUploading(false);
       setProgress(0);
@@ -138,19 +139,24 @@ export function FileUpload({ categoryId }: FileUploadProps) {
 
   const handleDelete = async (id: string, path: string) => {
     try {
-      await supabase.storage
+      const { error } = await supabase.storage
         .from('file_uploads')
         .remove([path]);
         
+      if (error) {
+        console.error("Error removing file from storage:", error);
+        toast.error("Error deleting file from storage");
+      }
+        
       await deleteFile(id, path);
       
-      toast("File deleted");
+      toast.success("File deleted");
       
       // Refresh the file list after deletion
       getFilesByCategory(categoryId);
     } catch (error) {
       console.error("Error deleting file:", error);
-      toast("Delete failed");
+      toast.error("Delete failed");
     }
   };
 
@@ -184,7 +190,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
     <div className="glass-card rounded-xl p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">
-          Files & Resources
+          Files &amp; Resources
         </h2>
         <div>
           <input
@@ -236,14 +242,12 @@ export function FileUpload({ categoryId }: FileUploadProps) {
                   </div>
                   <div className="flex items-center ml-4">
                     <Button 
-                      asChild 
                       variant="ghost" 
                       size="sm"
                       className="gap-1"
+                      onClick={() => window.open(file.url, "_blank")}
                     >
-                      <a href={file.url} target="_blank" rel="noopener noreferrer">
-                        Open
-                      </a>
+                      Open
                     </Button>
                     <Button
                       variant="ghost"

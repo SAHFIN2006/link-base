@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -127,7 +128,7 @@ export default function MyLinks() {
           <div>
             <h1 className="text-4xl font-bold mb-2">
               <SplitText highlightClassName="text-linkblue">My </SplitText>
-              <ShinyText>Resources</ShinyText>
+              <ShinyText className="ml-2">Resources</ShinyText>
             </h1>
             <p className="text-muted-foreground">
               <BlurText startDelay={0.3}>Manage and organize all your saved links</BlurText>
@@ -165,11 +166,11 @@ export default function MyLinks() {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-full rounded-md bg-black/40 border-white/10 h-10 px-3 py-2"
+              className="w-full rounded-md bg-black/40 border-white/10 h-10 px-3 py-2 text-foreground dark:text-white"
             >
               <option value="all">All Categories</option>
               {categories.map(category => (
-                <option key={category.id} value={category.id}>
+                <option key={category.id} value={category.id} className="text-foreground dark:text-white bg-background">
                   {category.name}
                 </option>
               ))}
@@ -193,7 +194,7 @@ export default function MyLinks() {
                   <span className="sr-only md:not-sr-only md:inline-block">Sort</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-black/90 backdrop-blur-lg border-white/10">
+              <DropdownMenuContent className="bg-background backdrop-blur-lg border-white/10">
                 <DropdownMenuItem 
                   className={sortOption === "newest" ? "bg-primary/20" : ""}
                   onClick={() => setSortOption("newest")}
@@ -266,6 +267,7 @@ export default function MyLinks() {
                 onEdit={handleEditResource}
                 onDelete={deleteResource}
                 onFavorite={toggleFavorite}
+                identificationData={resource.identificationData}
               />
             </motion.div>
           ))}

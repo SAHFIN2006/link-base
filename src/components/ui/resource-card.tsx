@@ -100,6 +100,10 @@ export function ResourceCard({
       });
     }
   };
+  
+  const handleCardClick = () => {
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
 
   // Display type based on URL
   const isYouTubeVideo = url.includes('youtube.com/embed/') || url.includes('youtu.be/');
@@ -110,18 +114,14 @@ export function ResourceCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: delay * 0.1 }}
       className={cn(
-        "glass-card rounded-lg overflow-hidden link-card-hover",
+        "glass-card rounded-lg overflow-hidden link-card-hover cursor-pointer",
         className
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleCardClick}
     >
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block p-5"
-      >
+      <div className="block p-5">
         <div className="flex justify-between items-start mb-3">
           <h3 className="text-lg font-medium line-clamp-1">{title}</h3>
           <div className="flex items-center">
@@ -133,6 +133,7 @@ export function ResourceCard({
                       size="icon" 
                       variant="ghost" 
                       className="h-8 w-8 rounded-full"
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <Info className="h-4 w-4 text-primary/80" />
                       <span className="sr-only">Resource Info</span>
@@ -235,16 +236,17 @@ export function ResourceCard({
               size="icon"
               variant="ghost"
               className="h-7 w-7 rounded-full ml-1"
-              asChild
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(url, "_blank", "noopener,noreferrer");
+              }}
             >
-              <a href={url} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-3.5 w-3.5" />
-                <span className="sr-only">Visit</span>
-              </a>
+              <ExternalLink className="h-3.5 w-3.5" />
+              <span className="sr-only">Visit</span>
             </Button>
           </div>
         </div>
-      </a>
+      </div>
     </motion.div>
   );
 }
