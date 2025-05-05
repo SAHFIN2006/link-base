@@ -7,26 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Search, Folder, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
-// Create a type for our icon components
-type IconComponent = React.ForwardRefExoticComponent<React.PropsWithoutRef<React.SVGProps<SVGSVGElement> & {
-  size?: number | string;
-}> & React.RefAttributes<SVGSVGElement>>;
-
-// Filter out the non-icon exports and construct a clean icon map
-const iconMap: Record<string, IconComponent> = {};
-
-// Add only the actual icon components to our map
+// Create a map of icon names to components
+const iconMap: Record<string, React.ComponentType<any>> = {};
 Object.entries(LucideIcons).forEach(([name, component]) => {
-  // Skip utility functions and non-component exports
+  // Filter out non-icon exports
   if (
+    typeof component === 'function' && 
     name !== 'createLucideIcon' && 
     name !== 'icons' &&
     name !== 'default' &&
     name !== '__esModule' &&
-    name !== 'type' &&
-    typeof component === 'function'
+    typeof component !== 'boolean'
   ) {
-    iconMap[name] = component as IconComponent;
+    iconMap[name] = component as React.ComponentType<any>;
   }
 });
 
@@ -101,7 +94,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
     if (!searchTerm) {
       // If no search, show popular icons first, then the rest alphabetically
       const remainingIcons = allIconNames.filter(name => !popularIcons.includes(name)).sort();
-      return [...popularIcons, ...remainingIcons];
+      return [...popularIcons.filter(name => iconMap[name]), ...remainingIcons];
     }
     
     // If searching, filter all icons by search term
@@ -268,8 +261,8 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
               <h4 className="text-xs font-medium text-muted-foreground mb-2 px-1">Lucide Icons</h4>
               <div className="grid grid-cols-8 gap-1">
                 {filteredIcons.map((name) => {
-                  const Icon = iconMap[name];
-                  if (!Icon) return null;
+                  const IconComponent = iconMap[name];
+                  if (!IconComponent) return null;
                   return (
                     <Button
                       key={name}
@@ -286,7 +279,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
                       }}
                       title={name}
                     >
-                      <Icon className="w-5 h-5" />
+                      <IconComponent className="w-5 h-5" />
                       <span className="sr-only">{name}</span>
                     </Button>
                   );

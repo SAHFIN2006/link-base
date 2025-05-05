@@ -59,37 +59,13 @@ export function FileUpload({ categoryId }: FileUploadProps) {
     setError(null);
     
     try {
-      // First, check if the bucket exists already
-      const { data: buckets } = await supabase.storage.listBuckets();
-      
-      let bucketExists = buckets?.some(bucket => bucket.name === 'file_uploads');
-      
-      if (!bucketExists) {
-        console.log("Creating storage bucket");
-        try {
-          // Try to create the bucket with public access
-          await supabase.storage.createBucket('file_uploads', {
-            public: true,
-            fileSizeLimit: 50 * 1024 * 1024 // 50MB
-          });
-          
-          console.log("Bucket created successfully");
-        } catch (bucketError: any) {
-          console.error("Error creating bucket:", bucketError);
-          setError(`Error setting up storage bucket: ${bucketError.message || "Unknown error"}`);
-          toast.error("Error setting up storage bucket. Please try again later.");
-          setUploading(false);
-          return;
-        }
-      }
-
-      console.log("Starting file upload process");
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
         const fileName = `${Math.random().toString(36).substring(2, 9)}_${file.name}`;
         const filePath = `${categoryId}/${fileName}`;
         
-        console.log(`Uploading file ${i + 1}/${selectedFiles.length}: ${file.name}`);
+        console.log(`Uploading file ${i + 1}/${selectedFiles.length}: ${file.name} to path ${filePath}`);
+        
         const { error: uploadError, data } = await supabase.storage
           .from('file_uploads')
           .upload(filePath, file, {

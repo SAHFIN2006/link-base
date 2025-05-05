@@ -1,90 +1,79 @@
 
-# LinkBase: Resource Organization and Discovery Platform
+# Resource Manager App
 
-![LinkBase Platform](https://i.imgur.com/XQGsZcL.png)
-
-LinkBase is a modern web application designed to help users organize, categorize, and discover technology resources across various domains. With an intuitive interface and powerful features, it serves as your personal gateway to the best technology resources on the web.
+A modern, responsive resource management application built with React, TypeScript, and Supabase.
 
 ## Features
 
-### Core Functionality
-- **Resource Management**: Add, edit, and delete web resources with titles, descriptions, URLs, and tags.
-- **Category Organization**: Group resources into customizable categories with icons.
-- **Favorites**: Mark resources as favorites for quick access.
-- **Search**: Powerful search functionality with category filtering.
-- **Keyboard Shortcuts**: Navigate and interact with the app efficiently using keyboard shortcuts.
+- **Category Management**: Organize resources into custom categories
+- **Resource Management**: Add, edit, and delete web resources with detailed information
+- **File Management**: Upload and manage files securely
+- **Notes**: Create and manage notes for each category
+- **Analytics**: Real-time analytics dashboard with device tracking
+- **Favorites**: Mark resources as favorites for quick access
+- **Search**: Powerful search functionality across all resources
+- **Dark Mode**: Full support for light and dark themes
 
-### Advanced Features
-- **Analytics Dashboard**: Visual insights into your resource collection through charts and statistics.
-- **Tag Suggestions**: Smart tag suggestions based on category and existing resources.
-- **Import/Export**: Back up or transfer your data collection.
-- **Media Resources**: Add YouTube videos alongside traditional web links.
-- **Responsive Design**: Works seamlessly across desktop and mobile devices.
+## Technology Stack
 
-## Tech Stack
+- **Frontend**: React, TypeScript, TailwindCSS
+- **UI Components**: shadcn/ui
+- **Icons**: Lucide React
+- **Backend**: Supabase (PostgreSQL)
+- **File Storage**: Supabase Storage
+- **Charts**: Recharts
 
-### Frontend
-- **React**: UI component library
-- **TypeScript**: Type-safe JavaScript
-- **React Router**: Client-side routing
-- **TanStack Query**: Data fetching and state management
-- **Framer Motion**: Animations and transitions
-- **Lucide Icons**: Comprehensive icon library
-- **Tailwind CSS**: Utility-first CSS framework
-- **Shadcn/UI**: Component library built on Radix UI
+## Getting Started
 
-### Backend
-- **Supabase**: Database, authentication, and real-time functionality
-- **PostgreSQL**: Relational database
+1. Clone the repository
+2. Install dependencies with `npm install`
+3. Set up Supabase credentials
+4. Start the development server with `npm run dev`
 
-### Development Tools
-- **Vite**: Fast build tooling
-- **ESLint**: Code linting
-- **Prettier**: Code formatting
+## Core Functionality
 
-## Using LinkBase
+### Categories
 
-### For Basic Users
+Create and manage categories to organize your resources. Each category can have:
+- A custom name
+- Description
+- Icon (from Lucide library or custom URL)
+- Associated resources, notes and files
 
-1. **Browse Categories**: Explore pre-defined resource categories on the home page.
-2. **Search Resources**: Use the search bar to find specific resources by keywords.
-3. **View Resources**: Click on any resource card to visit the linked website.
-4. **Mark Favorites**: Click the star icon on any resource to add it to your favorites.
+### Resources
 
-### For Power Users
+Add web resources with:
+- Title and URL
+- Description
+- Custom tags
+- Identification data (owner, contact info, access type)
+- Category assignment
 
-1. **Customize Categories**: Create your own categories with custom icons.
-2. **Add Resources**: Add new resources to any category with detailed metadata.
-3. **Tag Management**: Use suggested tags or create custom ones to organize resources.
-4. **Keyboard Shortcuts**: Press `?` to view all available keyboard shortcuts.
-5. **Import/Export**: Back up your data or import from another source.
-6. **Analytics**: View usage statistics and resource distribution.
+### Files
 
-### For Developers
+Upload and manage files:
+- Supports multiple file types (documents, images, videos, etc.)
+- Organized by category
+- Preview and download functionality
 
-1. **Component Structure**: The app follows a component-based architecture with reusable UI elements.
-2. **State Management**: Data is managed through React contexts and TanStack Query.
-3. **Database Structure**: Two main tables - Categories and Resources with appropriate relations.
-4. **Real-time Updates**: All changes sync in real-time across clients.
-5. **Styling System**: Uses Tailwind CSS with custom design tokens and a comprehensive theming system.
+### Notes
 
-## Keyboard Shortcuts
+Create rich text notes:
+- Organized by category
+- Support for formatting and markdown
 
-- `?` - Show keyboard shortcuts menu
-- `Shift + /` - Focus search bar
-- `Alt + C` - Go to Categories page
-- `Alt + M` - Go to My Links page
-- `Alt + N` - Add new resource
-- `Alt + A` - Go to Analytics page
+### Analytics
 
-## Performance and Accessibility
+Track and visualize:
+- Resource distribution by category
+- Device usage statistics
+- Browser and OS distribution
+- Historical data trends
 
-- **Optimized Images**: All images are compressed and optimized for fast loading.
-- **Semantic HTML**: Proper HTML structure for better accessibility.
-- **Color Contrast**: High contrast ratios for readability.
-- **Responsive Design**: Works on all screen sizes from mobile to desktop.
-- **Dark/Light Modes**: Choose your preferred visual theme.
+## Architecture
 
----
-
-LinkBase is an ongoing project that welcomes contributions. Feel free to submit issues or pull requests to help improve the platform.
+The application follows a component-based architecture with:
+- Context API for state management
+- Custom hooks for data operations
+- Typescript for type safety
+- Responsive design for all screen sizes
