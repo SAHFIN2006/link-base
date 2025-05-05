@@ -4,7 +4,7 @@ import * as LucideIcons from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Search, Folder } from "lucide-react";
+import { Search, Folder, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 // Create a type for our icon components
@@ -41,8 +41,36 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
   const [customIconUrl, setCustomIconUrl] = useState("");
   const [customIcons, setCustomIcons] = useState<{[key: string]: string}>({});
   
-  // Default to Folder icon if the selected icon doesn't exist
-  const IconComponent = iconMap[selectedIcon] || LucideIcons.Folder;
+  // Get the selected icon component or image
+  const renderSelectedIcon = () => {
+    if (selectedIcon.startsWith('CustomIcon_')) {
+      // Handle custom icon
+      const iconUrl = customIcons[selectedIcon];
+      if (iconUrl) {
+        return (
+          <img 
+            src={iconUrl} 
+            alt={selectedIcon}
+            className="w-6 h-6"
+            onError={(e) => {
+              // Fallback to a default icon on error
+              e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+            }}
+          />
+        );
+      }
+      return <AlertCircle className="w-6 h-6" />;
+    }
+    
+    // Handle Lucide icon
+    const IconComponent = iconMap[selectedIcon];
+    if (IconComponent) {
+      return <IconComponent className="w-6 h-6" />;
+    }
+    
+    // Default icon if nothing else matches
+    return <Folder className="w-6 h-6" />;
+  };
 
   // Most commonly used icons for categories to show first
   const popularIcons = [
@@ -105,26 +133,46 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
       return;
     }
 
-    // Generate a unique name for the custom icon
-    const iconName = `CustomIcon_${Object.keys(customIcons).length + 1}`;
-    
-    // Add the new custom icon
-    const newCustomIcons = {
-      ...customIcons,
-      [iconName]: customIconUrl
+    // Validate URL
+    try {
+      new URL(customIconUrl);
+    } catch (e) {
+      toast.error("Please enter a valid URL");
+      return;
+    }
+
+    // Test if image loads
+    const img = new Image();
+    img.onload = () => {
+      // Generate a unique name for the custom icon
+      const iconName = `CustomIcon_${Object.keys(customIcons).length + 1}`;
+      
+      // Add the new custom icon
+      const newCustomIcons = {
+        ...customIcons,
+        [iconName]: customIconUrl
+      };
+      
+      setCustomIcons(newCustomIcons);
+      
+      // Save to localStorage
+      try {
+        localStorage.setItem('customIcons', JSON.stringify(newCustomIcons));
+        toast.success("Custom icon added successfully!");
+        setCustomIconUrl("");
+        // Select the newly added icon
+        onSelectIcon(iconName);
+      } catch (error) {
+        console.error("Error saving custom icons:", error);
+        toast.error("Failed to save custom icon");
+      }
     };
     
-    setCustomIcons(newCustomIcons);
+    img.onerror = () => {
+      toast.error("Failed to load image from URL. Please check the URL and try again.");
+    };
     
-    // Save to localStorage
-    try {
-      localStorage.setItem('customIcons', JSON.stringify(newCustomIcons));
-      toast.success("Custom icon added successfully!");
-      setCustomIconUrl("");
-    } catch (error) {
-      console.error("Error saving custom icons:", error);
-      toast.error("Failed to save custom icon");
-    }
+    img.src = customIconUrl;
   };
 
   return (
@@ -136,7 +184,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
           className="w-12 h-12 p-2 flex items-center justify-center"
           onClick={() => setIsOpen(!isOpen)}
         >
-          <IconComponent className="w-6 h-6" />
+          {renderSelectedIcon()}
         </Button>
         <div className="text-sm text-muted-foreground">
           {selectedIcon || "Select an icon"}
@@ -144,7 +192,7 @@ export function IconPicker({ selectedIcon, onSelectIcon }: IconPickerProps) {
       </div>
       
       {isOpen && (
-        <div className="absolute z-50 w-[340px] mt-2 p-3 bg-background/95 backdrop-blur-xl border border-border rounded-lg shadow-lg max-h-[500px] overflow-hidden flex flex-col">
+        <div className="absolute z-50 w-[340px] mt-2 p-3 bg-background/95 backdrop-blur-xl border border-border rounded-lg shadow-lg max-h-[500px] overflow-hidden flex flex-col dark:bg-gray-800 dark:border-gray-700">
           <div className="mb-2 relative">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input

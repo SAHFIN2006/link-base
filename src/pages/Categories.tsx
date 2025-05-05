@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import * as LucideIcons from "lucide-react";
@@ -55,6 +56,24 @@ export default function Categories() {
   const getCategoryIcon = (category) => {
     if (!category.icon) return <LucideIcons.Folder size={32} />;
     
+    if (category.icon.startsWith('CustomIcon_')) {
+      const customIcons = JSON.parse(localStorage.getItem('customIcons') || '{}');
+      const iconUrl = customIcons[category.icon];
+      if (iconUrl) {
+        return (
+          <img 
+            src={iconUrl} 
+            alt={category.name} 
+            className="h-8 w-8" 
+            onError={(e) => {
+              // Fallback to default icon on error
+              e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><path d="M9 8h6"></path><path d="M12 16v-4"></path></svg>';
+            }}
+          />
+        );
+      }
+    }
+    
     const IconComponent = LucideIcons[category.icon];
     if (IconComponent) {
       return <IconComponent size={32} />;
@@ -89,12 +108,12 @@ export default function Categories() {
   return (
     <Layout>
       <div className="container px-4 mx-auto py-12">
-        {/* Header with animations */}
+        {/* Header with animations - Added spacing between Explore and Categories */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
           <div>
             <h1 className="text-4xl font-bold mb-2">
               <SplitText highlightClassName="text-linkblue">Explore </SplitText>
-              <ShinyText>Categories</ShinyText>
+              <span className="ml-2"><ShinyText>Categories</ShinyText></span>
             </h1>
             <p className="text-muted-foreground">
               Browse all categories or create your own custom categories

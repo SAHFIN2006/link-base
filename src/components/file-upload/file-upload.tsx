@@ -14,12 +14,14 @@ import {
   Table,
   Video,
   Music,
-  Trash2
+  Trash2,
+  AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { useDatabase } from "@/context/database-context";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface FileUploadProps {
   categoryId: string;
@@ -35,6 +37,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -53,6 +56,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
   const handleUpload = async (selectedFiles: File[]) => {
     setUploading(true);
     setProgress(0);
+    setError(null);
     
     try {
       // First, check if the bucket exists already
@@ -69,13 +73,13 @@ export function FileUpload({ categoryId }: FileUploadProps) {
             fileSizeLimit: 50 * 1024 * 1024 // 50MB
           });
           
-          // Set bucket to public after creation
-          await supabase.storage.getBucket('file_uploads');
-          
           console.log("Bucket created successfully");
-        } catch (bucketError) {
+        } catch (bucketError: any) {
           console.error("Error creating bucket:", bucketError);
+          setError(`Error setting up storage bucket: ${bucketError.message || "Unknown error"}`);
           toast.error("Error setting up storage bucket. Please try again later.");
+          setUploading(false);
+          return;
         }
       }
 
@@ -95,6 +99,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
           
         if (uploadError) {
           console.error("Upload error:", uploadError);
+          setError(`Error uploading ${file.name}: ${uploadError.message}`);
           toast.error(`Error uploading ${file.name}: ${uploadError.message}`);
           continue;
         }
@@ -117,6 +122,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
           toast.success(`${file.name} uploaded successfully`);
         } else {
           console.error("Failed to retrieve public URL for file:", file.name);
+          setError(`Failed to retrieve URL for ${file.name}`);
           toast.error(`Failed to retrieve URL for ${file.name}`);
         }
         
@@ -125,8 +131,9 @@ export function FileUpload({ categoryId }: FileUploadProps) {
       
       // Refresh the file list after upload
       getFilesByCategory(categoryId);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading file:", error);
+      setError(`Upload failed: ${error.message || "Unknown error"}`);
       toast.error("Upload failed. Please try again.");
     } finally {
       setUploading(false);
@@ -146,6 +153,7 @@ export function FileUpload({ categoryId }: FileUploadProps) {
       if (error) {
         console.error("Error removing file from storage:", error);
         toast.error("Error deleting file from storage");
+        return;
       }
         
       await deleteFile(id, path);
@@ -210,6 +218,16 @@ export function FileUpload({ categoryId }: FileUploadProps) {
           </Button>
         </div>
       </div>
+      
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
       
       {uploading && (
         <div className="mb-6">
