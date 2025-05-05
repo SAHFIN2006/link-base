@@ -134,6 +134,48 @@ interface DatabaseProviderProps {
   children: ReactNode;
 }
 
+// Helper function to safely parse identification data
+const parseIdentificationData = (data: Json | null): ResourceIdentificationData | undefined => {
+  if (!data) return undefined;
+  
+  // If data is an object, validate and convert it to ResourceIdentificationData
+  if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+    const result: ResourceIdentificationData = {};
+    
+    // Type guard for key access on object
+    const typedData = data as Record<string, Json>;
+    
+    if ('owner' in typedData && typeof typedData.owner === 'string') {
+      result.owner = typedData.owner;
+    }
+    
+    if ('contactInfo' in typedData && typeof typedData.contactInfo === 'string') {
+      result.contactInfo = typedData.contactInfo;
+    }
+    
+    if ('accessType' in typedData && typeof typedData.accessType === 'string') {
+      const accessType = typedData.accessType;
+      if (accessType === 'public' || accessType === 'private' || accessType === 'restricted') {
+        result.accessType = accessType;
+      }
+    }
+    
+    if ('createdBy' in typedData && typeof typedData.createdBy === 'string') {
+      result.createdBy = typedData.createdBy;
+    }
+    
+    return Object.keys(result).length > 0 ? result : undefined;
+  }
+  
+  return undefined;
+};
+
+// Helper function to convert ResourceIdentificationData to Json
+const identificationDataToJson = (data?: ResourceIdentificationData): Json | null => {
+  if (!data) return null;
+  return data as unknown as Json;
+};
+
 export function DatabaseProvider({ children }: DatabaseProviderProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
@@ -231,42 +273,6 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
       }
     };
     
-    // Helper function to safely parse identification data
-    const parseIdentificationData = (data: Json | null): ResourceIdentificationData | undefined => {
-      if (!data) return undefined;
-      
-      // If data is an object, validate and convert it to ResourceIdentificationData
-      if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
-        const result: ResourceIdentificationData = {};
-        
-        // Type guard for key access on object
-        const typedData = data as Record<string, Json>;
-        
-        if ('owner' in typedData && typeof typedData.owner === 'string') {
-          result.owner = typedData.owner;
-        }
-        
-        if ('contactInfo' in typedData && typeof typedData.contactInfo === 'string') {
-          result.contactInfo = typedData.contactInfo;
-        }
-        
-        if ('accessType' in typedData && typeof typedData.accessType === 'string') {
-          const accessType = typedData.accessType;
-          if (accessType === 'public' || accessType === 'private' || accessType === 'restricted') {
-            result.accessType = accessType;
-          }
-        }
-        
-        if ('createdBy' in typedData && typeof typedData.createdBy === 'string') {
-          result.createdBy = typedData.createdBy;
-        }
-        
-        return Object.keys(result).length > 0 ? result : undefined;
-      }
-      
-      return undefined;
-    };
-    
     const categoriesChannel = supabase
       .channel('public:categories')
       .on('postgres_changes', 
@@ -319,6 +325,8 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
 
     window.addEventListener('import-data', handleImportData as EventListener);
       
+    loadData();
+    
     return () => {
       supabase.removeChannel(categoriesChannel);
       supabase.removeChannel(resourcesChannel);
@@ -430,7 +438,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
           description: resourceData.description,
           category_id: resourceData.categoryId,
           tags: resourceData.tags,
-          identification_data: resourceData.identificationData || null
+          identification_data: identificationDataToJson(resourceData.identificationData)
         }])
         .select()
         .single();
@@ -474,7 +482,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
           category_id: data.categoryId,
           tags: data.tags,
           favorite: data.favorite,
-          identification_data: data.identificationData || null
+          identification_data: data.identificationData ? identificationDataToJson(data.identificationData) : undefined
         })
         .eq('id', id);
         
@@ -798,7 +806,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
             category_id: categoryId || null,
             tags: res.tags || [],
             favorite: res.favorite || false,
-            identification_data: res.identificationData || null
+            identification_data: res.identificationData ? identificationDataToJson(res.identificationData) : null
           };
         });
         
