@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 export interface Category {
   id: string;
@@ -9,6 +10,13 @@ export interface Category {
   icon: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ResourceIdentificationData {
+  owner?: string;
+  contactInfo?: string;
+  accessType?: 'public' | 'private' | 'restricted';
+  createdBy?: string;
 }
 
 export interface Resource {
@@ -21,12 +29,7 @@ export interface Resource {
   favorite: boolean;
   createdAt: string;
   updatedAt: string;
-  identificationData?: {
-    owner?: string;
-    contactInfo?: string;
-    accessType?: 'public' | 'private' | 'restricted';
-    createdBy?: string;
-  };
+  identificationData?: ResourceIdentificationData;
 }
 
 export interface Note {
@@ -188,7 +191,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
           favorite: res.favorite || false,
           createdAt: res.created_at,
           updatedAt: res.updated_at,
-          identificationData: res.identification_data || undefined
+          identificationData: parseIdentificationData(res.identification_data)
         }));
         
         const transformedNotes = notesData.map(note => ({
@@ -228,7 +231,41 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
       }
     };
     
-    loadData();
+    // Helper function to safely parse identification data
+    const parseIdentificationData = (data: Json | null): ResourceIdentificationData | undefined => {
+      if (!data) return undefined;
+      
+      // If data is an object, validate and convert it to ResourceIdentificationData
+      if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+        const result: ResourceIdentificationData = {};
+        
+        // Type guard for key access on object
+        const typedData = data as Record<string, Json>;
+        
+        if ('owner' in typedData && typeof typedData.owner === 'string') {
+          result.owner = typedData.owner;
+        }
+        
+        if ('contactInfo' in typedData && typeof typedData.contactInfo === 'string') {
+          result.contactInfo = typedData.contactInfo;
+        }
+        
+        if ('accessType' in typedData && typeof typedData.accessType === 'string') {
+          const accessType = typedData.accessType;
+          if (accessType === 'public' || accessType === 'private' || accessType === 'restricted') {
+            result.accessType = accessType;
+          }
+        }
+        
+        if ('createdBy' in typedData && typeof typedData.createdBy === 'string') {
+          result.createdBy = typedData.createdBy;
+        }
+        
+        return Object.keys(result).length > 0 ? result : undefined;
+      }
+      
+      return undefined;
+    };
     
     const categoriesChannel = supabase
       .channel('public:categories')
@@ -410,7 +447,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         favorite: data.favorite || false,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
-        identificationData: data.identification_data || undefined
+        identificationData: parseIdentificationData(data.identification_data)
       };
       
       setResources(prev => [...prev, newResource]);
@@ -692,7 +729,8 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         tags: resource.tags,
         favorite: resource.favorite,
         createdAt: resource.createdAt,
-        updatedAt: resource.updatedAt
+        updatedAt: resource.updatedAt,
+        identificationData: resource.identificationData
       })),
       notes: notes.map(note => ({
         id: note.id,
@@ -854,7 +892,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
             favorite: res.favorite || false,
             createdAt: res.created_at,
             updatedAt: res.updated_at,
-            identificationData: res.identification_data || undefined
+            identificationData: parseIdentificationData(res.identification_data)
           }));
           
           const transformedNotes = notesData.map((note: any) => ({
