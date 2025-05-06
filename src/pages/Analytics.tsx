@@ -478,7 +478,7 @@ function Analytics() {
                 <span>Bar</span>
               </TabsTrigger>
               <TabsTrigger value="line" className="flex items-center gap-1">
-                <LineChartIcon className="h-3 w-3" />
+                <LineChart className="h-3 w-3" />
                 <span>Line</span>
               </TabsTrigger>
             </TabsList>
