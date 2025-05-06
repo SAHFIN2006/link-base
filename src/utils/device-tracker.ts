@@ -1,4 +1,3 @@
-
 export interface DeviceInfo {
   browser: string;
   browserVersion: string;
@@ -20,14 +19,16 @@ export function getDeviceInfo(): DeviceInfo {
   
   // Generate a semi-persistent unique ID based on browser fingerprinting
   const generateUniqueId = () => {
+    // Use safe properties available in all browsers
     const fingerprint = [
       navigator.userAgent,
       navigator.language,
       screen.width,
       screen.height,
       new Date().getTimezoneOffset(),
-      navigator.hardwareConcurrency,
-      navigator.deviceMemory,
+      // Optional properties - check if they exist first
+      navigator.hardwareConcurrency || '',
+      // Remove deviceMemory as it's not universally supported
       // Add more browser-specific attributes if needed
     ].join('|');
     

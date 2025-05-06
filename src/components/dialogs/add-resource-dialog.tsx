@@ -40,6 +40,7 @@ import {
 import { toast } from "sonner";
 
 const formSchema = z.object({
+  id: z.string().optional(),
   title: z.string().min(1, "Title is required"),
   url: z.string().url("Please enter a valid URL"),
   description: z.string().optional(),
@@ -51,21 +52,41 @@ const formSchema = z.object({
   createdBy: z.string().optional(),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+export type ResourceFormData = z.infer<typeof formSchema> & {
+  identificationData?: Record<string, any>;
+};
 
 interface AddResourceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialData?: ResourceFormData;
+  onSave?: (data: ResourceFormData) => void;
+  onClose?: () => void;
+  isOpen?: boolean;
+  categories?: any[];
 }
 
-export function AddResourceDialog({ open, onOpenChange }: AddResourceDialogProps) {
-  const { categories, addResource } = useDatabase();
+export function AddResourceDialog({ 
+  open, 
+  onOpenChange, 
+  initialData, 
+  onSave,
+  onClose,
+  isOpen,
+  categories: providedCategories
+}: AddResourceDialogProps) {
+  const { categories: contextCategories, addResource } = useDatabase();
+  const categories = providedCategories || contextCategories;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(initialData?.tags || []);
+  
+  // Use either open or isOpen prop to determine dialog state
+  const dialogOpen = open || isOpen;
+  const setDialogOpen = onOpenChange || onClose;
 
-  const form = useForm<FormValues>({
+  const form = useForm<ResourceFormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       title: "",
       url: "",
       description: "",
@@ -81,10 +102,11 @@ export function AddResourceDialog({ open, onOpenChange }: AddResourceDialogProps
   const handleClose = () => {
     form.reset();
     setTags([]);
-    onOpenChange(false);
+    if (onOpenChange) onOpenChange(false);
+    if (onClose) onClose();
   };
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (values: ResourceFormData) => {
     try {
       setIsSubmitting(true);
 
@@ -103,18 +125,28 @@ export function AddResourceDialog({ open, onOpenChange }: AddResourceDialogProps
 
       // Only include identificationData if it has values
       const hasIdentData = Object.keys(filteredIdentData).length > 0;
-
-      await addResource({
-        title: values.title,
-        url: values.url,
-        description: values.description || "",
-        categoryId: values.categoryId,
-        tags: tags,
+      
+      const finalData: ResourceFormData = {
+        ...values,
+        tags,
         identificationData: hasIdentData ? filteredIdentData : undefined,
-      });
+      };
 
-      toast.success("Resource added successfully");
-      handleClose();
+      if (onSave) {
+        onSave(finalData);
+      } else {
+        await addResource({
+          title: values.title,
+          url: values.url,
+          description: values.description || "",
+          categoryId: values.categoryId,
+          tags: tags,
+          identificationData: hasIdentData ? filteredIdentData : undefined,
+        });
+
+        toast.success("Resource added successfully");
+        handleClose();
+      }
     } catch (error) {
       console.error("Error adding resource:", error);
       toast.error("Failed to add resource. Please try again.");
@@ -124,12 +156,12 @@ export function AddResourceDialog({ open, onOpenChange }: AddResourceDialogProps
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={dialogOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Resource</DialogTitle>
+          <DialogTitle>{initialData?.id ? "Edit Resource" : "Add New Resource"}</DialogTitle>
           <DialogDescription>
-            Add a new web resource to your collection
+            {initialData?.id ? "Edit your web resource" : "Add a new web resource to your collection"}
           </DialogDescription>
         </DialogHeader>
 
@@ -177,6 +209,7 @@ export function AddResourceDialog({ open, onOpenChange }: AddResourceDialogProps
                     <Textarea
                       placeholder="Brief description of the resource"
                       {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -234,7 +267,7 @@ export function AddResourceDialog({ open, onOpenChange }: AddResourceDialogProps
                         <FormItem>
                           <FormLabel>Owner</FormLabel>
                           <FormControl>
-                            <Input placeholder="Resource owner" {...field} />
+                            <Input placeholder="Resource owner" {...field} value={field.value || ""} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -248,7 +281,7 @@ export function AddResourceDialog({ open, onOpenChange }: AddResourceDialogProps
                         <FormItem>
                           <FormLabel>Contact Information</FormLabel>
                           <FormControl>
-                            <Input placeholder="Email or phone" {...field} />
+                            <Input placeholder="Email or phone" {...field} value={field.value || ""} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -288,7 +321,7 @@ export function AddResourceDialog({ open, onOpenChange }: AddResourceDialogProps
                         <FormItem>
                           <FormLabel>Created By</FormLabel>
                           <FormControl>
-                            <Input placeholder="Creator name" {...field} />
+                            <Input placeholder="Creator name" {...field} value={field.value || ""} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -304,7 +337,7 @@ export function AddResourceDialog({ open, onOpenChange }: AddResourceDialogProps
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Adding..." : "Add Resource"}
+                {isSubmitting ? "Saving..." : initialData?.id ? "Save Changes" : "Add Resource"}
               </Button>
             </DialogFooter>
           </form>

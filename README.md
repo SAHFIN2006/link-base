@@ -1,79 +1,55 @@
 
-# Resource Manager App
+# Resource Manager
 
-A modern, responsive resource management application built with React, TypeScript, and Supabase.
+A modern web application for organizing and managing resources, categories, files, and notes.
 
-## Features
+## Core Features
 
-- **Category Management**: Organize resources into custom categories
-- **Resource Management**: Add, edit, and delete web resources with detailed information
-- **File Management**: Upload and manage files securely
-- **Notes**: Create and manage notes for each category
-- **Analytics**: Real-time analytics dashboard with device tracking
-- **Favorites**: Mark resources as favorites for quick access
-- **Search**: Powerful search functionality across all resources
+- **Resource Management**: Save and organize web resources with descriptions and tags
+- **Categories**: Group resources by customizable categories
+- **File Storage**: Upload and manage files associated with categories
+- **Notes**: Create and edit notes for each category
+- **Analytics**: Track visitor statistics with device information
 - **Dark Mode**: Full support for light and dark themes
 
 ## Technology Stack
 
-- **Frontend**: React, TypeScript, TailwindCSS
+- **Frontend**: React, TypeScript, Tailwind CSS
 - **UI Components**: shadcn/ui
-- **Icons**: Lucide React
-- **Backend**: Supabase (PostgreSQL)
-- **File Storage**: Supabase Storage
-- **Charts**: Recharts
+- **Data Visualization**: Recharts
+- **Storage**: LocalStorage (demo mode)
+
+## Application Structure
+
+- **Pages**: Main application views (Dashboard, Categories, Resources, Analytics)
+- **Components**: Reusable UI elements organized by functionality
+- **Context**: State management for application data
+- **Utils**: Helper functions and utilities
 
 ## Getting Started
 
 1. Clone the repository
-2. Install dependencies with `npm install`
-3. Set up Supabase credentials
-4. Start the development server with `npm run dev`
+2. Install dependencies: `npm install`
+3. Start development server: `npm run dev`
 
-## Core Functionality
+## Folder Structure
 
-### Categories
+```
+src/
+├── components/          # UI components
+│   ├── dialogs/         # Modal dialogs
+│   ├── ui/              # Base UI components
+│   └── animations/      # Visual animations
+├── context/             # Application state
+├── pages/               # Main application views
+├── utils/               # Helper functions
+└── hooks/               # Custom React hooks
+```
 
-Create and manage categories to organize your resources. Each category can have:
-- A custom name
-- Description
-- Icon (from Lucide library or custom URL)
-- Associated resources, notes and files
+## Key Features
 
-### Resources
-
-Add web resources with:
-- Title and URL
-- Description
-- Custom tags
-- Identification data (owner, contact info, access type)
-- Category assignment
-
-### Files
-
-Upload and manage files:
-- Supports multiple file types (documents, images, videos, etc.)
-- Organized by category
-- Preview and download functionality
-
-### Notes
-
-Create rich text notes:
-- Organized by category
-- Support for formatting and markdown
-
-### Analytics
-
-Track and visualize:
-- Resource distribution by category
-- Device usage statistics
-- Browser and OS distribution
-- Historical data trends
-
-## Architecture
-
-The application follows a component-based architecture with:
-- Context API for state management
-- Custom hooks for data operations
-- Typescript for type safety
-- Responsive design for all screen sizes
+- Tag-based organization
+- Resource metadata tracking
+- Device analytics
+- Responsive design
+- Intuitive user interface

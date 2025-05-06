@@ -85,7 +85,7 @@ export default function CategoryDetails() {
         id: resource.id,
         title: resource.title,
         url: resource.url,
-        description: resource.description,
+        description: resource.description || "",
         categoryId: resource.categoryId,
         tags: resource.tags,
         identificationData: resource.identificationData
@@ -96,7 +96,6 @@ export default function CategoryDetails() {
   
   const handleSaveResource = (data: ResourceFormData) => {
     try {
-      // Log the identification data for debugging
       if (data.identificationData) {
         console.log("Saving resource with identification data:", data.identificationData);
       }
@@ -309,14 +308,14 @@ export default function CategoryDetails() {
       
       {/* Resource Dialog */}
       <AddResourceDialog
-        categories={categories}
-        initialData={resourceToEdit}
         isOpen={isAddResourceDialogOpen}
         onClose={() => {
           setIsAddResourceDialogOpen(false);
           setResourceToEdit(undefined);
         }}
+        initialData={resourceToEdit}
         onSave={handleSaveResource}
+        categories={categories}
       />
       
       {category && (

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -69,7 +68,7 @@ export default function MyLinks() {
         id: resource.id,
         title: resource.title,
         url: resource.url,
-        description: resource.description,
+        description: resource.description || "",
         categoryId: resource.categoryId,
         tags: resource.tags,
         identificationData: resource.identificationData
@@ -322,14 +321,14 @@ export default function MyLinks() {
       
       {/* Resource Dialog */}
       <AddResourceDialog
-        categories={categories}
-        initialData={resourceToEdit}
         isOpen={isAddResourceDialogOpen}
         onClose={() => {
           setIsAddResourceDialogOpen(false);
           setResourceToEdit(undefined);
         }}
+        initialData={resourceToEdit}
         onSave={handleSaveResource}
+        categories={categories}
       />
     </Layout>
   );

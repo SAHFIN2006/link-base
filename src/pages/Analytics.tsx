@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from "react";
-import { RadialChart, BarChart, AreaChart } from "@/components/ui/chart";
+import { RadialChart, BarChart, AreaChart } from "@/components/ui/charts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDatabase } from "@/context/database-context";
