@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import {
   AreaChart, 
   CustomRadialBarChart, 
   DynamicChart,
-  LineChart,
+  CustomLineChart,
   ComboChart,
   ScatterPlotChart 
 } from "@/components/ui/charts";
@@ -23,7 +22,7 @@ import {
   TrendingUp, 
   ChartBar, 
   BarChart3,
-  LineChart as LineChartIcon,
+  LineChart, 
   AreaChart as AreaChartIcon,
   Activity,
   ScatterChart,
@@ -575,7 +574,7 @@ function Analytics() {
                               className={cn("h-8 w-8 p-0", selectedChartType === "line" && "bg-accent")}
                               onClick={() => setSelectedChartType("line")}
                             >
-                              <LineChartIcon className="h-4 w-4" />
+                              <LineChart className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -677,7 +676,7 @@ function Analytics() {
                               className={cn("h-8 w-8 p-0", selectedChartType === "line" && "bg-accent")}
                               onClick={() => setSelectedChartType("line")}
                             >
-                              <LineChartIcon className="h-4 w-4" />
+                              <LineChart className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -764,7 +763,7 @@ function Analytics() {
                   />
                 )}
                 {selectedChartType === "line" && (
-                  <LineChart 
+                  <CustomLineChart 
                     data={advancedConfig.showMultipleSeries ? multiSeriesData : filteredGrowthData}
                     dataKey={advancedConfig.showMultipleSeries ? multiSeriesList : "value"}
                     valueFormatter={(value) => `${value} resources`}
@@ -939,7 +938,7 @@ function Analytics() {
                 <CardDescription>Compare trends across categories</CardDescription>
               </CardHeader>
               <CardContent className="h-[300px]">
-                <LineChart
+                <CustomLineChart
                   data={multiSeriesData}
                   dataKey={multiSeriesList}
                   valueFormatter={(value) => `${value} items`}
@@ -953,7 +952,7 @@ function Analytics() {
                 </Badge>
               </CardFooter>
             </Card>
-
+            
             <Card className="transition-all duration-300 hover:shadow-md overflow-hidden">
               <CardHeader>
                 <CardTitle>Combination Analysis</CardTitle>

@@ -22,7 +22,7 @@ import {
   PolarRadiusAxis,
   Brush,
   ReferenceLine,
-  LineChart,
+  LineChart as RechartsLineChart,
   Line,
   ComposedChart,
   Scatter
@@ -643,7 +643,7 @@ export function CustomRadialBarChart({
   );
 }
 
-interface LineChartProps {
+interface CustomLineChartProps {
   data: any[];
   dataKey: string | string[];
   className?: string;
@@ -657,7 +657,8 @@ interface LineChartProps {
   showBrush?: boolean;
 }
 
-export function LineChart({
+// Renamed from LineChart to CustomLineChart to avoid conflict with recharts import
+export function CustomLineChart({
   data,
   dataKey,
   className,
@@ -669,14 +670,14 @@ export function LineChart({
   showDots = true,
   syncId,
   showBrush = false
-}: LineChartProps) {
+}: CustomLineChartProps) {
   const keys = Array.isArray(dataKey) ? dataKey : [dataKey];
   
   return (
     <ChartContainer config={{}} className={className}>
       {data.length > 0 ? (
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
+          <RechartsLineChart
             data={data}
             margin={{ top: 20, right: 30, left: 0, bottom: showBrush ? 60 : 20 }}
             syncId={syncId}
@@ -747,7 +748,7 @@ export function LineChart({
                 tickFormatter={(value) => value.toString().slice(0, 8)}
               />
             )}
-          </LineChart>
+          </RechartsLineChart>
         </ResponsiveContainer>
       ) : (
         <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -1045,7 +1046,7 @@ export function DynamicChart({
       );
     case "line":
       return (
-        <LineChart 
+        <CustomLineChart
           data={data} 
           dataKey={chartConfig?.dataKeys || "value"}
           xAxisDataKey={chartConfig?.xAxis || "name"}
