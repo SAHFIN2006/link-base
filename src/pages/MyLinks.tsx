@@ -92,7 +92,13 @@ export default function MyLinks() {
           description: "Your resource has been successfully updated",
         });
       } else {
-        addResource(data);
+        // Ensure tags is an array if undefined
+        const resourceData = {
+          ...data,
+          tags: data.tags || [] // Ensure tags is not optional
+        };
+        
+        addResource(resourceData);
         toast({
           title: "Resource added",
           description: "Your resource has been successfully added",
@@ -321,11 +327,8 @@ export default function MyLinks() {
       
       {/* Resource Dialog */}
       <AddResourceDialog
-        isOpen={isAddResourceDialogOpen}
-        onClose={() => {
-          setIsAddResourceDialogOpen(false);
-          setResourceToEdit(undefined);
-        }}
+        open={isAddResourceDialogOpen}
+        onOpenChange={setIsAddResourceDialogOpen}
         initialData={resourceToEdit}
         onSave={handleSaveResource}
         categories={categories}

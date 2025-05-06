@@ -45,7 +45,7 @@ const formSchema = z.object({
   url: z.string().url("Please enter a valid URL"),
   description: z.string().optional(),
   categoryId: z.string().min(1, "Category is required"),
-  tags: z.array(z.string()).optional(),
+  tags: z.array(z.string()).default([]),
   owner: z.string().optional(),
   contactInfo: z.string().optional(),
   accessType: z.enum(["public", "private", "restricted"]).optional(),
@@ -81,8 +81,11 @@ export function AddResourceDialog({
   const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   
   // Use either open or isOpen prop to determine dialog state
-  const dialogOpen = open || isOpen;
-  const setDialogOpen = onOpenChange || onClose;
+  const dialogOpen = open || isOpen || false;
+  const setDialogOpen = (value: boolean) => {
+    if (onOpenChange) onOpenChange(value);
+    if (onClose && !value) onClose();
+  };
 
   const form = useForm<ResourceFormData>({
     resolver: zodResolver(formSchema),
@@ -102,8 +105,7 @@ export function AddResourceDialog({
   const handleClose = () => {
     form.reset();
     setTags([]);
-    if (onOpenChange) onOpenChange(false);
-    if (onClose) onClose();
+    setDialogOpen(false);
   };
 
   const onSubmit = async (values: ResourceFormData) => {
@@ -156,7 +158,7 @@ export function AddResourceDialog({
   };
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={handleClose}>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{initialData?.id ? "Edit Resource" : "Add New Resource"}</DialogTitle>

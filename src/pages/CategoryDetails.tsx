@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -107,7 +108,14 @@ export default function CategoryDetails() {
           description: "Your resource has been successfully updated",
         });
       } else {
-        addResource({ ...data, categoryId: categoryId || "" });
+        // Ensure tags is an array if undefined
+        const resourceData = {
+          ...data,
+          categoryId: categoryId || "",
+          tags: data.tags || [] // Ensure tags is not optional
+        };
+        
+        addResource(resourceData);
         toast({
           title: "Resource added",
           description: "Your resource has been successfully added to this category",
@@ -169,14 +177,14 @@ export default function CategoryDetails() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
-                {getCategoryIcon(category.id)}
+                {getCategoryIcon(category?.id || "")}
               </div>
               <div>
                 <h1 className="text-4xl font-bold">
-                  <ShinyText>{category.name}</ShinyText>
+                  <ShinyText>{category?.name}</ShinyText>
                 </h1>
                 <p className="text-muted-foreground mt-1">
-                  {category.description}
+                  {category?.description}
                 </p>
               </div>
             </div>
@@ -308,11 +316,8 @@ export default function CategoryDetails() {
       
       {/* Resource Dialog */}
       <AddResourceDialog
-        isOpen={isAddResourceDialogOpen}
-        onClose={() => {
-          setIsAddResourceDialogOpen(false);
-          setResourceToEdit(undefined);
-        }}
+        open={isAddResourceDialogOpen}
+        onOpenChange={setIsAddResourceDialogOpen}
         initialData={resourceToEdit}
         onSave={handleSaveResource}
         categories={categories}

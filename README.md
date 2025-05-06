@@ -11,13 +11,14 @@ A modern web application for organizing and managing resources, categories, file
 - **Notes**: Create and edit notes for each category
 - **Analytics**: Track visitor statistics with device information
 - **Dark Mode**: Full support for light and dark themes
+- **Resource Identification**: Track resource ownership and access types
 
 ## Technology Stack
 
 - **Frontend**: React, TypeScript, Tailwind CSS
 - **UI Components**: shadcn/ui
 - **Data Visualization**: Recharts
-- **Storage**: LocalStorage (demo mode)
+- **Storage**: Supabase (database & storage)
 
 ## Application Structure
 
@@ -53,3 +54,6 @@ src/
 - Device analytics
 - Responsive design
 - Intuitive user interface
+- File management
+- Notes editor
+
