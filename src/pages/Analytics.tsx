@@ -1,7 +1,17 @@
-import { useEffect, useState, useCallback } from "react";
+
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RadialChart, BarChart, AreaChart, CustomRadialBarChart, DynamicChart } from "@/components/ui/charts";
+import { 
+  RadialChart, 
+  BarChart, 
+  AreaChart, 
+  CustomRadialBarChart, 
+  DynamicChart,
+  LineChart,
+  ComboChart,
+  ScatterPlotChart 
+} from "@/components/ui/charts";
 import { useDatabase } from "@/context/database-context";
 import { trackDeviceInfo, DeviceInfo } from "@/utils/device-tracker";
 import { Link } from "react-router-dom";
@@ -12,8 +22,14 @@ import {
   ChartPie,
   TrendingUp, 
   ChartBar, 
+  BarChart3,
+  LineChart as LineChartIcon,
+  AreaChart as AreaChartIcon,
+  Activity,
+  ScatterChart,
   ArrowUpRight, 
-  ArrowDownRight
+  ArrowDownRight,
+  Sliders
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
@@ -25,8 +41,10 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "sonner";
 
 function Analytics() {
   const { categories, resources, getCategoryStats, getFavoriteResources } = useDatabase();
@@ -36,7 +54,12 @@ function Analytics() {
   const [chartType, setChartType] = useState("category");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activePieIndex, setActivePieIndex] = useState(0);
-  const [selectedChartType, setSelectedChartType] = useState<"pie" | "bar" | "radialBar">("pie");
+  const [selectedChartType, setSelectedChartType] = useState<"pie" | "bar" | "radialBar" | "line" | "area" | "combo">("pie");
+  const [advancedConfig, setAdvancedConfig] = useState({
+    showBrush: false,
+    stacked: false,
+    showMultipleSeries: false
+  });
   const isMobile = useIsMobile();
   
   // Enhanced device analytics tracking with more frequent updates
@@ -206,11 +229,37 @@ function Analytics() {
       .sort((a, b) => b.value - a.value);
   }, [deviceData]);
 
+  // Generate multiple series data for advanced charts
+  const getMultiSeriesData = useCallback(() => {
+    const data = [];
+    const categoryNames = categories.map(c => c.name).slice(0, 3);
+    const now = new Date();
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(now.getDate() - i);
+      const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      
+      const item: Record<string, string | number> = { name: dateStr };
+      
+      categoryNames.forEach(cat => {
+        // Generate random but consistent values
+        const seed = (dateStr.charCodeAt(0) + cat.charCodeAt(0)) % 10;
+        item[cat] = Math.floor(Math.random() * 10) + seed + 1;
+      });
+      
+      data.push(item);
+    }
+    
+    return { data, series: categoryNames };
+  }, [categories]);
+
   const categoryCounts = getCategoryCounts();
   const contributionByCategory = getContributionByCategory();
   const browserChartData = getDeviceChartData();
   const osChartData = getOSChartData();
   const deviceTypeData = getDeviceTypeData();
+  const { data: multiSeriesData, series: multiSeriesList } = getMultiSeriesData();
 
   // Generate time-series mock data for growth chart
   const generateGrowthData = useCallback(() => {
@@ -228,17 +277,40 @@ function Analytics() {
     return data;
   }, [resources.length]);
 
-  const growthData = generateGrowthData();
+  const growthData = useMemo(() => generateGrowthData(), [generateGrowthData]);
+
+  const filteredGrowthData = useMemo(() => {
+    // Apply time filter to growth data
+    if (timeFilter === "all") return growthData;
+    
+    const now = new Date();
+    let filterDate = new Date();
+    
+    if (timeFilter === "today") {
+      filterDate.setHours(0, 0, 0, 0);
+    } else if (timeFilter === "week") {
+      filterDate.setDate(now.getDate() - 7);
+    } else if (timeFilter === "month") {
+      filterDate.setMonth(now.getMonth() - 1);
+    }
+    
+    return growthData.filter(item => {
+      const itemDate = new Date(item.name);
+      return itemDate >= filterDate;
+    });
+  }, [growthData, timeFilter]);
 
   const handleClearAnalytics = () => {
     if (confirm("Are you sure you want to clear all device analytics data?")) {
       localStorage.removeItem('device_analytics');
       setDeviceData([]);
+      toast.success("Analytics data cleared successfully");
     }
   };
 
   const handleRefresh = () => {
     setIsRefreshing(true);
+    toast.info("Refreshing analytics data...");
     
     // Update device info
     trackAndUpdateDeviceInfo();
@@ -246,11 +318,21 @@ function Analytics() {
     // Simulate data refresh with a delay
     setTimeout(() => {
       setIsRefreshing(false);
+      toast.success("Analytics data refreshed successfully");
     }, 1000);
   };
 
+  // Chart configuration based on selected chart type
+  const chartConfig = useMemo(() => ({
+    showBrush: advancedConfig.showBrush,
+    stacked: advancedConfig.stacked,
+    dataKeys: advancedConfig.showMultipleSeries ? multiSeriesList : ["value"],
+    barKeys: ["value"],
+    lineKeys: advancedConfig.showMultipleSeries ? multiSeriesList.slice(1) : []
+  }), [advancedConfig, multiSeriesList]);
+
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto py-6 space-y-6 pb-20">
       {/* Navigation and Controls */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
         <div>
@@ -323,8 +405,30 @@ function Analytics() {
               <SelectItem value="category">Category Distribution</SelectItem>
               <SelectItem value="contribution">Contribution</SelectItem>
               <SelectItem value="device">Device Info</SelectItem>
+              <SelectItem value="advanced">Advanced Charts</SelectItem>
             </SelectContent>
           </Select>
+
+          <TooltipProvider>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => setAdvancedConfig(prev => ({
+                    ...prev,
+                    showBrush: !prev.showBrush
+                  }))}
+                >
+                  <Sliders className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Chart Settings</p>
+              </TooltipContent>
+            </UITooltip>
+          </TooltipProvider>
         </div>
       </div>
       
@@ -364,7 +468,7 @@ function Analytics() {
       {/* Chart Type Tabs - Only show on mobile */}
       {isMobile && (
         <div className="block md:hidden">
-          <Tabs defaultValue="pie" value={selectedChartType} onValueChange={(v) => setSelectedChartType(v as "pie" | "bar" | "radialBar")}>
+          <Tabs defaultValue="pie" value={selectedChartType} onValueChange={(v) => setSelectedChartType(v as any)}>
             <TabsList className="grid grid-cols-3 mb-4">
               <TabsTrigger value="pie" className="flex items-center gap-1">
                 <ChartPie className="h-3 w-3" />
@@ -374,9 +478,23 @@ function Analytics() {
                 <ChartBar className="h-3 w-3" />
                 <span>Bar</span>
               </TabsTrigger>
+              <TabsTrigger value="line" className="flex items-center gap-1">
+                <LineChartIcon className="h-3 w-3" />
+                <span>Line</span>
+              </TabsTrigger>
+            </TabsList>
+            <TabsList className="grid grid-cols-3 mb-4">
+              <TabsTrigger value="area" className="flex items-center gap-1">
+                <AreaChartIcon className="h-3 w-3" />
+                <span>Area</span>
+              </TabsTrigger>
               <TabsTrigger value="radialBar" className="flex items-center gap-1">
                 <TrendingUp className="h-3 w-3" />
                 <span>Radial</span>
+              </TabsTrigger>
+              <TabsTrigger value="combo" className="flex items-center gap-1">
+                <Activity className="h-3 w-3" />
+                <span>Combo</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -394,30 +512,77 @@ function Analytics() {
                   <span>Resource Distribution</span>
                   {!isMobile && (
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className={cn("h-8 w-8 p-0", selectedChartType === "pie" && "bg-accent")}
-                        onClick={() => setSelectedChartType("pie")}
-                      >
-                        <ChartPie className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className={cn("h-8 w-8 p-0", selectedChartType === "bar" && "bg-accent")}
-                        onClick={() => setSelectedChartType("bar")}
-                      >
-                        <ChartBar className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className={cn("h-8 w-8 p-0", selectedChartType === "radialBar" && "bg-accent")}
-                        onClick={() => setSelectedChartType("radialBar")}
-                      >
-                        <TrendingUp className="h-4 w-4" />
-                      </Button>
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className={cn("h-8 w-8 p-0", selectedChartType === "pie" && "bg-accent")}
+                              onClick={() => setSelectedChartType("pie")}
+                            >
+                              <ChartPie className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Pie Chart</p>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className={cn("h-8 w-8 p-0", selectedChartType === "bar" && "bg-accent")}
+                              onClick={() => setSelectedChartType("bar")}
+                            >
+                              <ChartBar className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Bar Chart</p>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className={cn("h-8 w-8 p-0", selectedChartType === "radialBar" && "bg-accent")}
+                              onClick={() => setSelectedChartType("radialBar")}
+                            >
+                              <TrendingUp className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Radial Bar Chart</p>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className={cn("h-8 w-8 p-0", selectedChartType === "line" && "bg-accent")}
+                              onClick={() => setSelectedChartType("line")}
+                            >
+                              <LineChartIcon className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Line Chart</p>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
                     </div>
                   )}
                 </CardTitle>
@@ -430,6 +595,7 @@ function Analytics() {
                     chartType={selectedChartType}
                     valueFormatter={(value) => `${value} resources`}
                     showAnimation
+                    chartConfig={chartConfig}
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -457,6 +623,9 @@ function Analytics() {
                     activeIndex={activePieIndex}
                     setActiveIndex={setActivePieIndex}
                     showAnimation
+                    innerRadius={45}
+                    outerRadius={85}
+                    paddingAngle={3}
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -477,16 +646,150 @@ function Analytics() {
           <>
             <Card className="transition-all duration-300 hover:shadow-md overflow-hidden">
               <CardHeader>
-                <CardTitle>Category Growth</CardTitle>
-                <CardDescription>Resources added over time</CardDescription>
+                <CardTitle className="flex justify-between items-center">
+                  <span>Category Growth</span>
+                  {!isMobile && (
+                    <div className="flex items-center gap-2">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className={cn("h-8 w-8 p-0", selectedChartType === "area" && "bg-accent")}
+                              onClick={() => setSelectedChartType("area")}
+                            >
+                              <AreaChartIcon className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Area Chart</p>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className={cn("h-8 w-8 p-0", selectedChartType === "line" && "bg-accent")}
+                              onClick={() => setSelectedChartType("line")}
+                            >
+                              <LineChartIcon className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Line Chart</p>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className={cn("h-8 w-8 p-0", selectedChartType === "bar" && "bg-accent")}
+                              onClick={() => setSelectedChartType("bar")}
+                            >
+                              <ChartBar className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Bar Chart</p>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className={cn("h-8 w-8 p-0", selectedChartType === "combo" && "bg-accent")}
+                              onClick={() => setSelectedChartType("combo")}
+                            >
+                              <Activity className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Combo Chart</p>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </div>
+                  )}
+                </CardTitle>
+                <CardDescription className="flex justify-between items-center">
+                  <span>Resources added over time</span>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setAdvancedConfig(prev => ({
+                        ...prev,
+                        showMultipleSeries: !prev.showMultipleSeries
+                      }))}
+                    >
+                      {advancedConfig.showMultipleSeries ? "Single Series" : "Multi Series"}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setAdvancedConfig(prev => ({
+                        ...prev,
+                        showBrush: !prev.showBrush
+                      }))}
+                    >
+                      {advancedConfig.showBrush ? "Hide Brush" : "Show Brush"}
+                    </Button>
+                  </div>
+                </CardDescription>
               </CardHeader>
               <CardContent className="h-[300px]">
-                <AreaChart 
-                  data={growthData}
-                  dataKey="value"
-                  valueFormatter={(value) => `${value} resources`}
-                  showAnimation
-                />
+                {selectedChartType === "area" && (
+                  <AreaChart 
+                    data={advancedConfig.showMultipleSeries ? multiSeriesData : filteredGrowthData}
+                    dataKey={advancedConfig.showMultipleSeries ? multiSeriesList[0] : "value"}
+                    stackedKeys={advancedConfig.showMultipleSeries ? multiSeriesList : undefined}
+                    valueFormatter={(value) => `${value} resources`}
+                    showAnimation
+                    showBrush={advancedConfig.showBrush}
+                  />
+                )}
+                {selectedChartType === "line" && (
+                  <LineChart 
+                    data={advancedConfig.showMultipleSeries ? multiSeriesData : filteredGrowthData}
+                    dataKey={advancedConfig.showMultipleSeries ? multiSeriesList : "value"}
+                    valueFormatter={(value) => `${value} resources`}
+                    showAnimation
+                    showBrush={advancedConfig.showBrush}
+                  />
+                )}
+                {selectedChartType === "bar" && (
+                  <BarChart 
+                    data={filteredGrowthData}
+                    valueFormatter={(value) => `${value} resources`}
+                    layout="horizontal"
+                    showAnimation
+                    showBrush={advancedConfig.showBrush}
+                  />
+                )}
+                {selectedChartType === "combo" && (
+                  <ComboChart 
+                    data={multiSeriesData}
+                    barKeys={[multiSeriesList[0]]}
+                    lineKeys={multiSeriesList.slice(1)}
+                    valueFormatter={(value) => `${value} resources`}
+                    showAnimation
+                  />
+                )}
               </CardContent>
               <CardFooter className="text-xs text-muted-foreground pt-0">
                 <Badge variant="outline" className="ml-auto">
@@ -497,7 +800,22 @@ function Analytics() {
             
             <Card className="transition-all duration-300 hover:shadow-md overflow-hidden">
               <CardHeader>
-                <CardTitle>Resource Type Distribution</CardTitle>
+                <CardTitle className="flex justify-between items-center">
+                  <span>Resource Type Distribution</span>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setAdvancedConfig(prev => ({
+                        ...prev,
+                        stacked: !prev.stacked
+                      }))}
+                    >
+                      {advancedConfig.stacked ? "Unstacked" : "Stacked"}
+                    </Button>
+                  </div>
+                </CardTitle>
                 <CardDescription>Breakdown by resource type</CardDescription>
               </CardHeader>
               <CardContent className="h-[300px]">
@@ -506,6 +824,8 @@ function Analytics() {
                   valueFormatter={(value) => `${value} resources`}
                   layout="horizontal"
                   showAnimation
+                  stacked={advancedConfig.stacked}
+                  showBrush={advancedConfig.showBrush}
                 />
               </CardContent>
               <CardFooter className="text-xs text-muted-foreground pt-0">
@@ -537,10 +857,12 @@ function Analytics() {
               </CardHeader>
               <CardContent className="h-[300px]">
                 {browserChartData.length > 0 ? (
-                  <RadialChart 
-                    data={browserChartData} 
+                  <DynamicChart 
+                    data={browserChartData}
+                    chartType={selectedChartType}
                     valueFormatter={(value) => `${value} visits`}
                     showAnimation
+                    chartConfig={chartConfig}
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -567,6 +889,7 @@ function Analytics() {
                     yAxisWidth={80}
                     showAnimation
                     valueFormatter={(value) => `${value} visits`}
+                    showBrush={advancedConfig.showBrush}
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -602,6 +925,74 @@ function Analytics() {
               <CardFooter className="text-xs text-muted-foreground pt-0">
                 <Badge variant="outline" className="ml-auto">
                   Real-time data
+                </Badge>
+              </CardFooter>
+            </Card>
+          </>
+        )}
+
+        {chartType === 'advanced' && (
+          <>
+            <Card className="transition-all duration-300 hover:shadow-md overflow-hidden">
+              <CardHeader>
+                <CardTitle>Multi-Series Line Analysis</CardTitle>
+                <CardDescription>Compare trends across categories</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[300px]">
+                <LineChart
+                  data={multiSeriesData}
+                  dataKey={multiSeriesList}
+                  valueFormatter={(value) => `${value} items`}
+                  showAnimation
+                  showBrush={advancedConfig.showBrush}
+                />
+              </CardContent>
+              <CardFooter className="text-xs text-muted-foreground pt-0">
+                <Badge variant="outline" className="ml-auto">
+                  Advanced analytics
+                </Badge>
+              </CardFooter>
+            </Card>
+
+            <Card className="transition-all duration-300 hover:shadow-md overflow-hidden">
+              <CardHeader>
+                <CardTitle>Combination Analysis</CardTitle>
+                <CardDescription>Bar and line visualization</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[300px]">
+                <ComboChart
+                  data={multiSeriesData}
+                  barKeys={[multiSeriesList[0]]}
+                  lineKeys={multiSeriesList.slice(1)}
+                  valueFormatter={(value) => `${value} items`}
+                  showAnimation
+                />
+              </CardContent>
+              <CardFooter className="text-xs text-muted-foreground pt-0">
+                <Badge variant="outline" className="ml-auto">
+                  Enhanced visualization
+                </Badge>
+              </CardFooter>
+            </Card>
+
+            <Card className="lg:col-span-2 transition-all duration-300 hover:shadow-md overflow-hidden">
+              <CardHeader>
+                <CardTitle>Advanced Area Visualization</CardTitle>
+                <CardDescription>Multi-series stacked area chart</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[350px]">
+                <AreaChart
+                  data={multiSeriesData}
+                  dataKey={multiSeriesList[0]}
+                  stackedKeys={multiSeriesList}
+                  valueFormatter={(value) => `${value} resources`}
+                  showAnimation
+                  showBrush={advancedConfig.showBrush}
+                />
+              </CardContent>
+              <CardFooter className="text-xs text-muted-foreground pt-0">
+                <Badge variant="outline" className="ml-auto">
+                  Comprehensive data view
                 </Badge>
               </CardFooter>
             </Card>
