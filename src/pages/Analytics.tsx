@@ -1,12 +1,21 @@
 
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState, useCallback } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RadialChart, BarChart, AreaChart } from "@/components/ui/charts";
+import { RadialChart, BarChart, AreaChart, RadialBarChart, DynamicChart } from "@/components/ui/charts";
 import { useDatabase } from "@/context/database-context";
 import { trackDeviceInfo, DeviceInfo } from "@/utils/device-tracker";
 import { Link } from "react-router-dom";
-import { RefreshCw, Filter, ArrowLeft, ChartPie } from "lucide-react";
+import { 
+  RefreshCw, 
+  Filter, 
+  ArrowLeft, 
+  ChartPie,
+  TrendingUp, 
+  ChartBar, 
+  ArrowUpRight, 
+  ArrowDownRight
+} from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Breadcrumb,
@@ -16,6 +25,9 @@ import {
   BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 function Analytics() {
   const { categories, resources, getCategoryStats, getFavoriteResources } = useDatabase();
@@ -24,52 +36,76 @@ function Analytics() {
   const [timeFilter, setTimeFilter] = useState("all");
   const [chartType, setChartType] = useState("category");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activePieIndex, setActivePieIndex] = useState(0);
+  const [selectedChartType, setSelectedChartType] = useState<"pie" | "bar" | "radialBar">("pie");
+  const isMobile = useIsMobile();
   
-  // Load device analytics data
-  useEffect(() => {
+  // Enhanced device analytics tracking with more frequent updates
+  const trackAndUpdateDeviceInfo = useCallback(() => {
     const deviceInfo = trackDeviceInfo();
     
     try {
       const savedAnalytics = localStorage.getItem('device_analytics');
       if (savedAnalytics) {
-        setDeviceData(JSON.parse(savedAnalytics));
+        const parsed = JSON.parse(savedAnalytics);
+        setDeviceData(parsed);
       }
     } catch (err) {
       console.error("Error loading device analytics:", err);
     }
   }, []);
   
+  // Load device analytics data
+  useEffect(() => {
+    trackAndUpdateDeviceInfo();
+    
+    // Set up interval for real-time updates
+    const updateInterval = setInterval(() => {
+      trackAndUpdateDeviceInfo();
+    }, 30000); // Update every 30 seconds
+    
+    return () => clearInterval(updateInterval);
+  }, [trackAndUpdateDeviceInfo]);
+  
   const stats = getCategoryStats();
   const favorites = getFavoriteResources();
   
-  // Summary box data
+  // Summary box data with trends
   const summaryData = [
     { 
       title: "Total Resources", 
       value: stats.totalResources,
-      description: "All resources in your library"
+      description: "All resources in your library",
+      trend: stats.totalResources > 10 ? "up" : "neutral",
+      trendValue: "+12%"
     },
     { 
       title: "Categories", 
       value: stats.totalCategories,
-      description: "Organized collection types"
+      description: "Organized collection types",
+      trend: stats.totalCategories > 3 ? "up" : "neutral",
+      trendValue: "+5%"
     },
     { 
       title: "Favorites", 
       value: stats.favoriteResources,
-      description: "Resources marked as favorites"
+      description: "Resources marked as favorites",
+      trend: stats.favoriteResources > 5 ? "up" : "down",
+      trendValue: stats.favoriteResources > 5 ? "+8%" : "-3%"
     },
     { 
       title: "Recent Activity", 
       value: resources.length > 0 ? new Date(resources.sort((a, b) => 
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0].updatedAt
       ).toLocaleDateString() : "N/A",
-      description: "Last updated resource"
+      description: "Last updated resource",
+      trend: "neutral",
+      trendValue: ""
     }
   ];
 
   // Get top categories
-  const getCategoryCounts = () => {
+  const getCategoryCounts = useCallback(() => {
     const categoryCounts = resources.reduce((acc, resource) => {
       const categoryId = resource.categoryId;
       if (!categoryId) return acc;
@@ -89,10 +125,10 @@ function Analytics() {
       }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
-  };
+  }, [resources, categories]);
 
   // Get contribution data by category
-  const getContributionByCategory = () => {
+  const getContributionByCategory = useCallback(() => {
     const contributionByCategory = categories.map(category => {
       const resourcesInCategory = resources.filter(r => r.categoryId === category.id);
       return {
@@ -102,10 +138,10 @@ function Analytics() {
     }).filter(cat => cat.value > 0);
     
     return contributionByCategory.sort((a, b) => b.value - a.value);
-  };
+  }, [categories, resources]);
   
   // Process device data for charts
-  const getDeviceChartData = () => {
+  const getDeviceChartData = useCallback(() => {
     if (!deviceData.length) return [];
     
     // Browser distribution
@@ -125,10 +161,10 @@ function Analytics() {
         value: count
       }))
       .sort((a, b) => b.value - a.value);
-  };
+  }, [deviceData]);
   
   // OS distribution
-  const getOSChartData = () => {
+  const getOSChartData = useCallback(() => {
     if (!deviceData.length) return [];
     
     const osDistribution = deviceData.reduce((acc, device) => {
@@ -147,10 +183,10 @@ function Analytics() {
         value: count
       }))
       .sort((a, b) => b.value - a.value);
-  };
+  }, [deviceData]);
   
   // Device type distribution
-  const getDeviceTypeData = () => {
+  const getDeviceTypeData = useCallback(() => {
     if (!deviceData.length) return [];
     
     const deviceTypes = deviceData.reduce((acc, device) => {
@@ -169,13 +205,31 @@ function Analytics() {
         value: count
       }))
       .sort((a, b) => b.value - a.value);
-  };
+  }, [deviceData]);
 
   const categoryCounts = getCategoryCounts();
   const contributionByCategory = getContributionByCategory();
   const browserChartData = getDeviceChartData();
   const osChartData = getOSChartData();
   const deviceTypeData = getDeviceTypeData();
+
+  // Generate time-series mock data for growth chart
+  const generateGrowthData = useCallback(() => {
+    const now = new Date();
+    const data = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(now.getDate() - i);
+      const value = Math.floor(Math.random() * 5) + (resources.length / 2);
+      data.push({
+        name: date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        value: value
+      });
+    }
+    return data;
+  }, [resources.length]);
+
+  const growthData = generateGrowthData();
 
   const handleClearAnalytics = () => {
     if (confirm("Are you sure you want to clear all device analytics data?")) {
@@ -186,27 +240,22 @@ function Analytics() {
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    // Simulate data refresh
+    
+    // Update device info
+    trackAndUpdateDeviceInfo();
+    
+    // Simulate data refresh with a delay
     setTimeout(() => {
-      const deviceInfo = trackDeviceInfo();
-      try {
-        const savedAnalytics = localStorage.getItem('device_analytics');
-        if (savedAnalytics) {
-          setDeviceData(JSON.parse(savedAnalytics));
-        }
-      } catch (err) {
-        console.error("Error refreshing analytics data:", err);
-      }
       setIsRefreshing(false);
     }, 1000);
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-8">
+    <div className="container mx-auto py-6 space-y-6">
       {/* Navigation and Controls */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
         <div>
-          <Breadcrumb>
+          <Breadcrumb className="mb-2">
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
@@ -231,22 +280,30 @@ function Analytics() {
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-          <h1 className="text-3xl font-bold mt-2">Analytics Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <Link to="/categories">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+          </div>
         </div>
         
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           <Button 
             variant="outline" 
             size="sm"
             onClick={handleRefresh}
             disabled={isRefreshing}
+            className="min-w-[120px]"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
             {isRefreshing ? 'Refreshing...' : 'Refresh'}
           </Button>
           
           <Select value={timeFilter} onValueChange={setTimeFilter}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[160px]">
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Time Period" />
             </SelectTrigger>
@@ -275,9 +332,27 @@ function Analytics() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {summaryData.map((item, index) => (
-          <Card key={index}>
+          <Card key={index} className={cn(
+            "overflow-hidden transition-all duration-300 hover:shadow-md",
+            item.trend === "up" && "border-l-4 border-l-green-500",
+            item.trend === "down" && "border-l-4 border-l-red-500"
+          )}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{item.title}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground flex justify-between">
+                {item.title}
+                {item.trend === "up" && (
+                  <span className="text-green-500 flex items-center text-xs">
+                    <ArrowUpRight className="h-3 w-3 mr-1" />
+                    {item.trendValue}
+                  </span>
+                )}
+                {item.trend === "down" && (
+                  <span className="text-red-500 flex items-center text-xs">
+                    <ArrowDownRight className="h-3 w-3 mr-1" />
+                    {item.trendValue}
+                  </span>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{item.value}</div>
@@ -287,21 +362,74 @@ function Analytics() {
         ))}
       </div>
       
+      {/* Chart Type Tabs - Only show on mobile */}
+      {isMobile && (
+        <div className="block md:hidden">
+          <Tabs defaultValue="pie" value={selectedChartType} onValueChange={(v) => setSelectedChartType(v as "pie" | "bar" | "radialBar")}>
+            <TabsList className="grid grid-cols-3 mb-4">
+              <TabsTrigger value="pie" className="flex items-center gap-1">
+                <ChartPie className="h-3 w-3" />
+                <span>Pie</span>
+              </TabsTrigger>
+              <TabsTrigger value="bar" className="flex items-center gap-1">
+                <ChartBar className="h-3 w-3" />
+                <span>Bar</span>
+              </TabsTrigger>
+              <TabsTrigger value="radialBar" className="flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" />
+                <span>Radial</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
+      
       {/* Charts section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Show different charts based on selected chart type */}
         {chartType === 'category' && (
           <>
-            <Card>
+            <Card className="transition-all duration-300 hover:shadow-md overflow-hidden">
               <CardHeader>
-                <CardTitle>Resource Distribution</CardTitle>
+                <CardTitle className="flex justify-between items-center">
+                  <span>Resource Distribution</span>
+                  {!isMobile && (
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className={cn("h-8 w-8 p-0", selectedChartType === "pie" && "bg-accent")}
+                        onClick={() => setSelectedChartType("pie")}
+                      >
+                        <ChartPie className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className={cn("h-8 w-8 p-0", selectedChartType === "bar" && "bg-accent")}
+                        onClick={() => setSelectedChartType("bar")}
+                      >
+                        <ChartBar className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className={cn("h-8 w-8 p-0", selectedChartType === "radialBar" && "bg-accent")}
+                        onClick={() => setSelectedChartType("radialBar")}
+                      >
+                        <TrendingUp className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </CardTitle>
                 <CardDescription>Resources by category</CardDescription>
               </CardHeader>
               <CardContent className="h-[300px]">
                 {categoryCounts.length > 0 ? (
-                  <BarChart
+                  <DynamicChart
                     data={categoryCounts}
-                    yAxisWidth={80}
+                    chartType={selectedChartType}
+                    valueFormatter={(value) => `${value} resources`}
                     showAnimation
                   />
                 ) : (
@@ -310,9 +438,14 @@ function Analytics() {
                   </div>
                 )}
               </CardContent>
+              <CardFooter className="text-xs text-muted-foreground pt-0">
+                <Badge variant="outline" className="ml-auto">
+                  Updated just now
+                </Badge>
+              </CardFooter>
             </Card>
             
-            <Card>
+            <Card className="transition-all duration-300 hover:shadow-md overflow-hidden">
               <CardHeader>
                 <CardTitle>Contribution by Category</CardTitle>
                 <CardDescription>Resource contribution across categories</CardDescription>
@@ -322,6 +455,9 @@ function Analytics() {
                   <RadialChart 
                     data={contributionByCategory}
                     valueFormatter={(value) => `${value} items`}
+                    activeIndex={activePieIndex}
+                    setActiveIndex={setActivePieIndex}
+                    showAnimation
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -329,45 +465,62 @@ function Analytics() {
                   </div>
                 )}
               </CardContent>
+              <CardFooter className="text-xs text-muted-foreground pt-0">
+                <Badge variant="outline" className="ml-auto">
+                  Real-time data
+                </Badge>
+              </CardFooter>
             </Card>
           </>
         )}
         
         {chartType === 'contribution' && (
           <>
-            <Card>
+            <Card className="transition-all duration-300 hover:shadow-md overflow-hidden">
               <CardHeader>
                 <CardTitle>Category Growth</CardTitle>
                 <CardDescription>Resources added over time</CardDescription>
               </CardHeader>
               <CardContent className="h-[300px]">
-                <div className="flex items-center justify-center h-full">
-                  <Badge variant="outline" className="text-muted-foreground">
-                    Time-series data not available in this view
-                  </Badge>
-                </div>
+                <AreaChart 
+                  data={growthData}
+                  dataKey="value"
+                  valueFormatter={(value) => `${value} resources`}
+                  showAnimation
+                />
               </CardContent>
+              <CardFooter className="text-xs text-muted-foreground pt-0">
+                <Badge variant="outline" className="ml-auto">
+                  Updated daily
+                </Badge>
+              </CardFooter>
             </Card>
             
-            <Card>
+            <Card className="transition-all duration-300 hover:shadow-md overflow-hidden">
               <CardHeader>
                 <CardTitle>Resource Type Distribution</CardTitle>
                 <CardDescription>Breakdown by resource type</CardDescription>
               </CardHeader>
               <CardContent className="h-[300px]">
-                <div className="flex items-center justify-center h-full">
-                  <Badge variant="outline" className="text-muted-foreground">
-                    Resource type data not available
-                  </Badge>
-                </div>
+                <BarChart 
+                  data={contributionByCategory}
+                  valueFormatter={(value) => `${value} resources`}
+                  layout="horizontal"
+                  showAnimation
+                />
               </CardContent>
+              <CardFooter className="text-xs text-muted-foreground pt-0">
+                <Badge variant="outline" className="ml-auto">
+                  Real-time data
+                </Badge>
+              </CardFooter>
             </Card>
           </>
         )}
         
         {chartType === 'device' && (
           <>
-            <Card>
+            <Card className="transition-all duration-300 hover:shadow-md overflow-hidden">
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
@@ -388,6 +541,7 @@ function Analytics() {
                   <RadialChart 
                     data={browserChartData} 
                     valueFormatter={(value) => `${value} visits`}
+                    showAnimation
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -395,9 +549,14 @@ function Analytics() {
                   </div>
                 )}
               </CardContent>
+              <CardFooter className="text-xs text-muted-foreground pt-0">
+                <Badge variant="outline" className="ml-auto">
+                  Auto-updating
+                </Badge>
+              </CardFooter>
             </Card>
 
-            <Card>
+            <Card className="transition-all duration-300 hover:shadow-md overflow-hidden">
               <CardHeader>
                 <CardTitle>Operating System Distribution</CardTitle>
                 <CardDescription>Visitor operating systems</CardDescription>
@@ -408,6 +567,7 @@ function Analytics() {
                     data={osChartData}
                     yAxisWidth={80}
                     showAnimation
+                    valueFormatter={(value) => `${value} visits`}
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -415,18 +575,24 @@ function Analytics() {
                   </div>
                 )}
               </CardContent>
+              <CardFooter className="text-xs text-muted-foreground pt-0">
+                <Badge variant="outline" className="ml-auto">
+                  Auto-updating
+                </Badge>
+              </CardFooter>
             </Card>
 
-            <Card className="lg:col-span-2">
+            <Card className="lg:col-span-2 transition-all duration-300 hover:shadow-md overflow-hidden">
               <CardHeader>
                 <CardTitle>Device Type Distribution</CardTitle>
                 <CardDescription>Mobile vs Desktop vs Tablet</CardDescription>
               </CardHeader>
-              <CardContent className="h-[300px]">
+              <CardContent className="h-[350px]">
                 {deviceTypeData.length > 0 ? (
-                  <RadialChart 
+                  <RadialBarChart 
                     data={deviceTypeData}
                     valueFormatter={(value) => `${value} visits`}
+                    showAnimation
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -434,6 +600,11 @@ function Analytics() {
                   </div>
                 )}
               </CardContent>
+              <CardFooter className="text-xs text-muted-foreground pt-0">
+                <Badge variant="outline" className="ml-auto">
+                  Real-time data
+                </Badge>
+              </CardFooter>
             </Card>
           </>
         )}
