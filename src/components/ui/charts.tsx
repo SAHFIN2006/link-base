@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   ResponsiveContainer,
@@ -15,7 +14,7 @@ import {
   AreaChart as RechartsAreaChart,
   Area,
   Sector,
-  RadialBarChart,
+  RadialBarChart as RechartsRadialBarChart,
   RadialBar,
   PolarGrid,
   PolarAngleAxis,
@@ -389,8 +388,7 @@ export function AreaChart({
             {showLegend && (
               <Legend 
                 layout="horizontal" 
-                verticalAlign="bottom" 
-                align="center"
+                verticalAlign="bottom"
                 wrapperStyle={{ paddingTop: 20 }}
               />
             )}
@@ -405,7 +403,7 @@ export function AreaChart({
   );
 }
 
-interface RadialBarChartProps {
+interface CustomRadialBarChartProps {
   data: ChartItem[];
   className?: string;
   emptyText?: string;
@@ -414,19 +412,19 @@ interface RadialBarChartProps {
   valueFormatter?: (value: number) => string;
 }
 
-export function RadialBarChart({
+export function CustomRadialBarChart({
   data,
   className,
   emptyText = "No data available",
   showAnimation = true,
   showLegend = true,
   valueFormatter
-}: RadialBarChartProps) {
+}: CustomRadialBarChartProps) {
   return (
     <ChartContainer config={{}} className={className}>
       {data.length > 0 ? (
         <ResponsiveContainer width="100%" height="100%">
-          <RadialBarChart 
+          <RechartsRadialBarChart 
             cx="50%" 
             cy="50%" 
             innerRadius="20%" 
@@ -495,7 +493,7 @@ export function RadialBarChart({
                 wrapperStyle={{ paddingTop: 20 }}
               />
             )}
-          </RadialBarChart>
+          </RechartsRadialBarChart>
         </ResponsiveContainer>
       ) : (
         <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -536,7 +534,7 @@ export function DynamicChart({
     return <BarChart data={data} className={className} valueFormatter={valueFormatter} showAnimation={showAnimation} />;
   }
   if (chartType === "radialBar") {
-    return <RadialBarChart data={data} className={className} valueFormatter={valueFormatter} showAnimation={showAnimation} />;
+    return <CustomRadialBarChart data={data} className={className} valueFormatter={valueFormatter} showAnimation={showAnimation} />;
   }
   if (chartType === "area") {
     return <AreaChart data={formattedAreaData} dataKey="value" className={className} valueFormatter={valueFormatter} showAnimation={showAnimation} />;

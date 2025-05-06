@@ -1,8 +1,7 @@
-
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RadialChart, BarChart, AreaChart, RadialBarChart, DynamicChart } from "@/components/ui/charts";
+import { RadialChart, BarChart, AreaChart, CustomRadialBarChart, DynamicChart } from "@/components/ui/charts";
 import { useDatabase } from "@/context/database-context";
 import { trackDeviceInfo, DeviceInfo } from "@/utils/device-tracker";
 import { Link } from "react-router-dom";
@@ -589,7 +588,7 @@ function Analytics() {
               </CardHeader>
               <CardContent className="h-[350px]">
                 {deviceTypeData.length > 0 ? (
-                  <RadialBarChart 
+                  <CustomRadialBarChart 
                     data={deviceTypeData}
                     valueFormatter={(value) => `${value} visits`}
                     showAnimation
