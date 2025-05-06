@@ -108,11 +108,14 @@ export default function CategoryDetails() {
           description: "Your resource has been successfully updated",
         });
       } else {
-        // Ensure tags is an array if undefined
+        // Ensure all required properties are defined before passing to addResource
         const resourceData = {
-          ...data,
+          title: data.title || "", // Provide default value to ensure it's not undefined
+          url: data.url || "", // Provide default value to ensure it's not undefined
+          description: data.description || "",
           categoryId: categoryId || "",
-          tags: data.tags || [] // Ensure tags is not optional
+          tags: data.tags || [], // Ensure tags is not optional
+          identificationData: data.identificationData
         };
         
         addResource(resourceData);

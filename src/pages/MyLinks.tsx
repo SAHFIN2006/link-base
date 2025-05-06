@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -92,10 +93,14 @@ export default function MyLinks() {
           description: "Your resource has been successfully updated",
         });
       } else {
-        // Ensure tags is an array if undefined
+        // Ensure all required properties are defined
         const resourceData = {
-          ...data,
-          tags: data.tags || [] // Ensure tags is not optional
+          title: data.title || "", // Provide default value to ensure it's not undefined
+          url: data.url || "", // Provide default value to ensure it's not undefined
+          description: data.description || "",
+          categoryId: data.categoryId || "",
+          tags: data.tags || [], // Ensure tags is not optional
+          identificationData: data.identificationData
         };
         
         addResource(resourceData);
